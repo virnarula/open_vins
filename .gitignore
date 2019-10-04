@@ -1,6 +1,7 @@
 cmake-build-debug
 build
 Build
+data
 *.*~
 .idea
 doxgen_generated
