@@ -30,7 +30,7 @@ using namespace ov_msckf;
 
 
 
-VioManager::VioManager(ros::NodeHandle &nh) {
+VioManager::VioManager() {
 
 
     //===================================================================================
@@ -39,17 +39,17 @@ VioManager::VioManager(ros::NodeHandle &nh) {
 
     // Load our state options
     StateOptions state_options;
-    nh.param<bool>("use_fej", state_options.do_fej, false);
-    nh.param<bool>("use_imuavg", state_options.imu_avg, false);
-    nh.param<bool>("use_rk4int", state_options.use_rk4_integration, true);
-    nh.param<bool>("calib_cam_extrinsics", state_options.do_calib_camera_pose, false);
-    nh.param<bool>("calib_cam_intrinsics", state_options.do_calib_camera_intrinsics, false);
-    nh.param<bool>("calib_cam_timeoffset", state_options.do_calib_camera_timeoffset, false);
-    nh.param<int>("max_clones", state_options.max_clone_size, 10);
-    nh.param<int>("max_slam", state_options.max_slam_features, 0);
-    nh.param<int>("max_aruco", state_options.max_aruco_features, 1024);
-    nh.param<int>("max_cameras", state_options.num_cameras, 1);
-    nh.param<double>("dt_slam_delay", dt_statupdelay, 3);
+	state_options.do_fej = false; // use_fej
+    state_options.imu_avg = false; //use_imuavg
+	state_options.use_rk4_integration = true; // use_rk4int
+	state_options.do_calib_camera_pose =  false; // calib_cam_extrinsics
+	state_options.do_calib_camera_intrinsics = false; // calib_cam_intrinsics
+	state_options.do_calib_camera_timeoffset = false; // calib_cam_timeoffset
+	state_options.max_clone_size = 10; // max_clones
+	state_options.max_slam_features = 0; // max_slam
+	state_options.max_aruco_features = 1024; // max_aruco
+	state_options.num_cameras = 1; // max_cameras
+	dt_statupdelay = 3; // dt_slam_delay
 
     // Enforce that if we are doing stereo tracking, we have two cameras
     if(state_options.num_cameras < 1) {
@@ -60,7 +60,7 @@ VioManager::VioManager(ros::NodeHandle &nh) {
 
     // Read in what representation our feature is
     std::string feat_rep_str;
-    nh.param<std::string>("feat_representation", feat_rep_str, "GLOBAL_3D");
+	feat_rep_str = "GLOBAL_3D"; // feat_representation
     std::transform(feat_rep_str.begin(), feat_rep_str.end(),feat_rep_str.begin(), ::toupper);
 
     // Set what representation we should be using
@@ -85,7 +85,7 @@ VioManager::VioManager(ros::NodeHandle &nh) {
 
     // Timeoffset from camera to IMU
     double calib_camimu_dt;
-    nh.param<double>("calib_camimu_dt", calib_camimu_dt, 0.0);
+	calib_camimu_dt = 0.0; // calib_camimu_dt
     Eigen::VectorXd temp_camimu_dt;
     temp_camimu_dt.resize(1);
     temp_camimu_dt(0) = calib_camimu_dt;
@@ -96,7 +96,7 @@ VioManager::VioManager(ros::NodeHandle &nh) {
     Eigen::Matrix<double,3,1> gravity;
     std::vector<double> vec_gravity;
     std::vector<double> vec_gravity_default = {0.0,0.0,9.81};
-    nh.param<std::vector<double>>("gravity", vec_gravity, vec_gravity_default);
+	vec_gravity = vec_gravity_default; // gravity
     gravity << vec_gravity.at(0),vec_gravity.at(1),vec_gravity.at(2);
 
     // Debug, print to the console!
@@ -133,13 +133,13 @@ VioManager::VioManager(ros::NodeHandle &nh) {
 
         // If our distortions are fisheye or not!
         bool is_fisheye;
-        nh.param<bool>("cam"+std::to_string(i)+"_is_fisheye", is_fisheye, false);
+		is_fisheye = false; // cami_is_fisheye
         state->get_model_CAM(i) = is_fisheye;
 
         // If the desired fov we should simulate
         std::vector<int> matrix_wh;
         std::vector<int> matrix_wd_default = {752,480};
-        nh.param<std::vector<int>>("cam"+std::to_string(i)+"_wh", matrix_wh, matrix_wd_default);
+		matrix_wh = matrix_wd_default; // cami_wh
         std::pair<int,int> wh(matrix_wh.at(0),matrix_wh.at(1));
 
         // Camera intrinsic properties
@@ -147,8 +147,8 @@ VioManager::VioManager(ros::NodeHandle &nh) {
         std::vector<double> matrix_k, matrix_d;
         std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
         std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
-        nh.param<std::vector<double>>("cam"+std::to_string(i)+"_k", matrix_k, matrix_k_default);
-        nh.param<std::vector<double>>("cam"+std::to_string(i)+"_d", matrix_d, matrix_d_default);
+		matrix_k = matrix_k_default; // cami_k
+		matrix_d = matrix_d_default; // cami_d
         cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
 
         // Save this representation in our state
@@ -161,7 +161,7 @@ VioManager::VioManager(ros::NodeHandle &nh) {
         std::vector<double> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 
         // Read in from ROS, and save into our eigen mat
-        nh.param<std::vector<double>>("T_C"+std::to_string(i)+"toI", matrix_TCtoI, matrix_TtoI_default);
+		matrix_TCtoI = matrix_TtoI_default; // T_CitoI
         T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
                 matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
                 matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
@@ -196,16 +196,16 @@ VioManager::VioManager(ros::NodeHandle &nh) {
 
     // Load config values for our feature initializer
     FeatureInitializerOptions featinit_options;
-    nh.param<int>("fi_max_runs", featinit_options.max_runs, 20);
-    nh.param<double>("fi_init_lamda", featinit_options.init_lamda, 1e-3);
-    nh.param<double>("fi_max_lamda", featinit_options.max_lamda, 1e10);
-    nh.param<double>("fi_min_dx", featinit_options.min_dx, 1e-6);
-    nh.param<double>("fi_min_dcost", featinit_options.min_dcost, 1e-6);
-    nh.param<double>("fi_lam_mult", featinit_options.lam_mult, 10);
-    nh.param<double>("fi_min_dist", featinit_options.min_dist, 0.25);
-    nh.param<double>("fi_max_dist", featinit_options.max_dist, 40);
-    nh.param<double>("fi_max_baseline", featinit_options.max_baseline, 40);
-    nh.param<double>("fi_max_cond_number", featinit_options.max_cond_number, 1000);
+	featinit_options.max_runs = 20; // fi_max_runs
+	featinit_options.init_lamda = 1e-3; // fi_init_lamda
+	featinit_options.max_lamda = 1e10; // fi_max_lamda
+	featinit_options.min_dx = 1e-6; // fi_min_dx
+	featinit_options.min_dcost = 1e-6; // fi_min_dcost
+	featinit_options.lam_mult = 10; // fi_lam_mult
+	featinit_options.min_dist = 0.25; // fi_min_dist
+	featinit_options.max_dist = 40; // fi_max_dist
+	featinit_options.max_baseline = 40; // fi_max_baseline
+	featinit_options.max_cond_number = 1000; // fi_max_cond_number
 
     // Debug, print to the console!
     ROS_INFO("FEATURE INITIALIZER PARAMETERS:");
@@ -224,15 +224,15 @@ VioManager::VioManager(ros::NodeHandle &nh) {
     int num_pts, fast_threshold, grid_x, grid_y, min_px_dist;
     double knn_ratio;
     bool use_klt, use_aruco, do_downsizing;
-    nh.param<bool>("use_klt", use_klt, true);
-    nh.param<bool>("use_aruco", use_aruco, false);
-    nh.param<int>("num_pts", num_pts, 500);
-    nh.param<int>("fast_threshold", fast_threshold, 10);
-    nh.param<int>("grid_x", grid_x, 10);
-    nh.param<int>("grid_y", grid_y, 8);
-    nh.param<int>("min_px_dist", min_px_dist, 10);
-    nh.param<double>("knn_ratio", knn_ratio, 0.85);
-    nh.param<bool>("downsize_aruco", do_downsizing, true);
+	use_klt = true; // use_klt
+	use_aruco = false; // use_aruco
+	num_pts = 500; // num_pts
+	fast_threshold = 10; // fast_threshold
+	grid_x = 10; // grid_x
+	grid_y = 8; // grid_y
+	min_px_dist = 10; // min_px_dist
+	knn_ratio = 0.85; // knn_ratio
+	do_downsizing = true; // downsize_aruco
 
     // Debug, print to the console!
     ROS_INFO("TRACKING PARAMETERS:");
@@ -252,10 +252,10 @@ VioManager::VioManager(ros::NodeHandle &nh) {
 
     // Our noise values for inertial sensor
     Propagator::NoiseManager imu_noises;
-    nh.param<double>("gyroscope_noise_density", imu_noises.sigma_w, 1.6968e-04);
-    nh.param<double>("accelerometer_noise_density", imu_noises.sigma_a, 2.0000e-3);
-    nh.param<double>("gyroscope_random_walk", imu_noises.sigma_wb, 1.9393e-05);
-    nh.param<double>("accelerometer_random_walk", imu_noises.sigma_ab, 3.0000e-03);
+	imu_noises.sigma_w = 1.6968e-04; // gyroscope_noise_density
+	imu_noises.sigma_a = 2.0000e-3; // accelerometer_noise_density
+	imu_noises.sigma_wb = 1.9393e-05; // gyroscope_random_walk
+	imu_noises.sigma_ab = 3.0000e-03; // accelerometer_random_walk
 
 
     // Debug print out
@@ -267,8 +267,8 @@ VioManager::VioManager(ros::NodeHandle &nh) {
 
     // Load inertial state initialize parameters
     double init_window_time, init_imu_thresh;
-    nh.param<double>("init_window_time", init_window_time, 0.5);
-    nh.param<double>("init_imu_thresh", init_imu_thresh, 1.0);
+	init_window_time = 0.5; // init_window_time
+	init_imu_thresh = 1.0; // init_imu_thresh
 
     // Debug print out
     ROS_INFO("INITIALIZATION PARAMETERS:");
@@ -280,12 +280,12 @@ VioManager::VioManager(ros::NodeHandle &nh) {
     UpdaterOptions msckf_options;
     UpdaterOptions slam_options;
     UpdaterOptions aruco_options;
-    nh.param<double>("up_msckf_sigma_px", msckf_options.sigma_pix, 1);
-    nh.param<int>("up_msckf_chi2_multipler", msckf_options.chi2_multipler, 5);
-    nh.param<double>("up_slam_sigma_px", slam_options.sigma_pix, 1);
-    nh.param<int>("up_slam_chi2_multipler", slam_options.chi2_multipler, 5);
-    nh.param<double>("up_aruco_sigma_px", aruco_options.sigma_pix, 1);
-    nh.param<int>("up_aruco_chi2_multipler", aruco_options.chi2_multipler, 5);
+	msckf_options.sigma_pix = 1; // up_msckf_sigma_px
+	msckf_options.chi2_multipler = 5; // up_msckf_chi2_multipler
+	slam_options.sigma_pix = 1; // up_slam_sigma_px
+	slam_options.chi2_multipler = 5; // up_slam_chi2_multipler
+	aruco_options.sigma_pix = 1; // up_aruco_sigma_px
+	aruco_options.chi2_multipler = 5; // up_aruco_chi2_multipler
 
     // If downsampling aruco, then double our noise values
     aruco_options.sigma_pix = (do_downsizing) ? 2*aruco_options.sigma_pix : aruco_options.sigma_pix;

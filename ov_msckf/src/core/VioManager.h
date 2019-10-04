@@ -62,7 +62,7 @@ namespace ov_msckf {
          * @brief Default constructor, will load all configuration variables
          * @param nh ROS node handler which we will load parameters from
          */
-        VioManager(ros::NodeHandle& nh);
+        VioManager();
 
 
         /**
