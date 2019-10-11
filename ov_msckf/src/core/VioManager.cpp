@@ -48,7 +48,7 @@ VioManager::VioManager() {
 	state_options.max_clone_size = 10; // max_clones
 	state_options.max_slam_features = 0; // max_slam
 	state_options.max_aruco_features = 1024; // max_aruco
-	state_options.num_cameras = 1; // max_cameras
+	state_options.num_cameras = 2; // max_cameras
 	dt_statupdelay = 3; // dt_slam_delay
 
     // Enforce that if we are doing stereo tracking, we have two cameras

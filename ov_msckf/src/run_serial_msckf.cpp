@@ -150,8 +150,18 @@ int main(int argc, char** argv) {
     bool has_right = false;
     cv::Mat img0, img1;
     cv::Mat img0_buffer, img1_buffer;
-    // double time = time_init.toSec();
-    // double time_buffer = time_init.toSec();
+    double time = 0.0;
+	double time_buffer = 0.0;
+
+	// Load groundtruth if we have it
+    std::map<double, Eigen::Matrix<double, 17, 1>> gt_states;
+	// TODO: Figure out if ground truth reading is needed
+    // if (nh.hasParam("path_gt")) {
+    //     std::string path_to_gt;
+    //     nh.param<std::string>("path_gt", path_to_gt, "");
+    //     DatasetReader::load_gt_file(path_to_gt, gt_states);
+    //     ROS_INFO("gt file path is: %s", path_to_gt.c_str());
+    // }
 
 	// Loop through data files (camera and imu)
 	for (auto timem : imu0_timestamps) {
@@ -170,101 +180,99 @@ int main(int argc, char** argv) {
         // Handle LEFT camera
 		if (cam0_images.find(timem) != cam0_images.end()) {
             // Get the image
-			cout << timem << endl;
-			cout << cam0_images.at(timem) << endl;
 			img0 = cv::imread(cam0_images_path+ "/" +cam0_images.at(timem), cv::IMREAD_COLOR);
+			cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
 			if (img0.empty()) {
 				cerr << endl << "Failed to load image at: "
 					 << cam0_images_path << "/" << cam0_images.at(timem) << endl;
 				return 1;
 			}
-			cout << "Width : " << img0.cols << "  Height: " << img0.rows << endl;
 
+			cout << "img0 Height: " << img0.rows << "   Width: " << img0.cols << endl;
 
-            // // Save to our temp variable
-            // has_left = true;
-            // img0 = cv_ptr->image.clone();
-            // time = cv_ptr->header.stamp.toSec();
+			// Save to our temp variable
+            has_left = true;
+			time = timem/1000000000.0;
         }
 
-        // // Handle RIGHT camera
-		// if (cam1_images.find(timem) != cam1_images.end()) {
-        //     // Get the image
-		// 	// TODO: Change this to read image from file
-        //     cv_bridge::CvImageConstPtr cv_ptr;
-        //     try {
-        //         cv_ptr = cv_bridge::toCvShare(s1, sensor_msgs::image_encodings::MONO8);
-        //     } catch (cv_bridge::Exception &e) {
-        //         ROS_ERROR("cv_bridge exception: %s", e.what());
-        //         continue;
-        //     }
-        //     // Save to our temp variable (use a right image that is near in time)
-        //     // TODO: fix this logic as the left will still advance instead of waiting
-        //     // TODO: should implement something like here:
-        //     // TODO: https://github.com/rpng/MARS-VINS/blob/master/example_ros/ros_driver.cpp
-        //     //if(std::abs(cv_ptr->header.stamp.toSec()-time) < 0.02) {
-        //     has_right = true;
-        //     img1 = cv_ptr->image.clone();
-        //     //}
-        // }
+        // Handle RIGHT camera
+		if (cam1_images.find(timem) != cam1_images.end()) {
+            // Get the image
+			img1 = cv::imread(cam1_images_path+ "/" +cam1_images.at(timem), cv::IMREAD_COLOR);
+			cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
+			if (img1.empty()) {
+				cerr << endl << "Failed to load image at: "
+					 << cam1_images_path << "/" << cam1_images.at(timem) << endl;
+				return 1;
+			}
+			cout << "img1 Height: " << img1.rows << "   Width: " << img1.cols << endl;
+
+            // Save to our temp variable (use a right image that is near in time)
+            // TODO: fix this logic as the left will still advance instead of waiting
+            // TODO: should implement something like here:
+            // TODO: https://github.com/rpng/MARS-VINS/blob/master/example_ros/ros_driver.cpp
+            //if(std::abs(cv_ptr->header.stamp.toSec()-time) < 0.02) {
+            has_right = true;
+            //}
+        }
 
 
-        // // Fill our buffer if we have not
-        // if(has_left && img0_buffer.rows == 0) {
-        //     has_left = false;
-        //     time_buffer = time;
-        //     img0_buffer = img0.clone();
-        // }
+        // Fill our buffer if we have not
+        if(has_left && img0_buffer.rows == 0) {
+            has_left = false;
+            time_buffer = time;
+            img0_buffer = img0.clone();
+        }
 
-        // // Fill our buffer if we have not
-        // if(has_right && img1_buffer.rows == 0) {
-        //     has_right = false;
-        //     img1_buffer = img1.clone();
-        // }
-
-
-        // // If we are in monocular mode, then we should process the left if we have it
-        // if(max_cameras==1 && has_left) {
-        //     // process once we have initialized with the GT
-        //     Eigen::Matrix<double, 17, 1> imustate;
-        //     if(!gt_states.empty() && !sys->intialized() && DatasetReader::get_gt_state(time_buffer,imustate,gt_states)) {
-        //         //biases are pretty bad normally, so zero them
-        //         //imustate.block(11,0,6,1).setZero();
-        //         sys->initialize_with_gt(imustate);
-        //     } else if(gt_states.empty() || sys->intialized()) {
-        //         sys->feed_measurement_monocular(time_buffer, img0_buffer, 0);
-        //     }
-        //     // visualize
-        //     //viz->visualize();
-        //     // reset bools
-        //     has_left = false;
-        //     // move buffer forward
-        //     time_buffer = time;
-        //     img0_buffer = img0.clone();
-        // }
+        // Fill our buffer if we have not
+        if(has_right && img1_buffer.rows == 0) {
+            has_right = false;
+            img1_buffer = img1.clone();
+        }
 
 
-        // // If we are in stereo mode and have both left and right, then process
-        // if(max_cameras==2 && has_left && has_right) {
-        //     // process once we have initialized with the GT
-        //     Eigen::Matrix<double, 17, 1> imustate;
-        //     if(!gt_states.empty() && !sys->intialized() && DatasetReader::get_gt_state(time_buffer,imustate,gt_states)) {
-        //         //biases are pretty bad normally, so zero them
-        //         //imustate.block(11,0,6,1).setZero();
-        //         sys->initialize_with_gt(imustate);
-        //     } else if(gt_states.empty() || sys->intialized()) {
-        //         sys->feed_measurement_stereo(time_buffer, img0_buffer, img1_buffer, 0, 1);
-        //     }
-        //     // visualize
-        //     //viz->visualize();
-        //     // reset bools
-        //     has_left = false;
-        //     has_right = false;
-        //     // move buffer forward
-        //     time_buffer = time;
-        //     img0_buffer = img0.clone();
-        //     img1_buffer = img1.clone();
-        // }
+        // If we are in monocular mode, then we should process the left if we have it
+        if(max_cameras==1 && has_left) {
+            // process once we have initialized with the GT
+            Eigen::Matrix<double, 17, 1> imustate;
+            if(!gt_states.empty() && !sys->intialized() && DatasetReader::get_gt_state(time_buffer,imustate,gt_states)) {
+                //biases are pretty bad normally, so zero them
+                //imustate.block(11,0,6,1).setZero();
+                sys->initialize_with_gt(imustate);
+            } else if(gt_states.empty() || sys->intialized()) {
+                sys->feed_measurement_monocular(time_buffer, img0_buffer, 0);
+            }
+            // visualize
+            //viz->visualize();
+            // reset bools
+            has_left = false;
+            // move buffer forward
+            time_buffer = time;
+            img0_buffer = img0.clone();
+        }
+
+
+        // If we are in stereo mode and have both left and right, then process
+        if(max_cameras==2 && has_left && has_right) {
+            // process once we have initialized with the GT
+            Eigen::Matrix<double, 17, 1> imustate;
+            if(!gt_states.empty() && !sys->intialized() && DatasetReader::get_gt_state(time_buffer,imustate,gt_states)) {
+                //biases are pretty bad normally, so zero them
+                //imustate.block(11,0,6,1).setZero();
+                sys->initialize_with_gt(imustate);
+            } else if(gt_states.empty() || sys->intialized()) {
+                sys->feed_measurement_stereo(time_buffer, img0_buffer, img1_buffer, 0, 1);
+            }
+            // visualize
+            //viz->visualize();
+            // reset bools
+            has_left = false;
+            has_right = false;
+            // move buffer forward
+            time_buffer = time;
+            img0_buffer = img0.clone();
+            img1_buffer = img1.clone();
+        }
 
     }
 
