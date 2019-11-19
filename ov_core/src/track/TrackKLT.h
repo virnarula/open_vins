@@ -129,6 +129,12 @@ namespace ov_core {
         // Timing variables
         boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6, rT7;
 
+        // detection timing
+        boost::posix_time::ptime rTDetect1, rTDetect2, rTDetect3;
+
+        // matching timing
+        boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
+
         // Parameters for our FAST grid detector
         int threshold;
         int grid_x;

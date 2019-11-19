@@ -87,19 +87,24 @@ void load_imu_data(const string &file_name, unordered_map<double, imu_data> &imu
     while (!file_in.eof()) {
         getline(file_in, s);
         if (!s.empty()) {
-            stringstream ss;
-            ss << s;
-            double t;
+            stringstream ss(s);
+			string word;
+			vector<double> line;
+			while (getline(ss, word, ',')) {
+				line.push_back(stod(word));
+			}
+
 			imu_data imu_vals;
-            ss >> t;
-            timestamps.push_back(t);
-            ss >> imu_vals.angular_velocity.x;
-			ss >> imu_vals.angular_velocity.y;
-			ss >> imu_vals.angular_velocity.z;
-			ss >> imu_vals.linear_acceleration.x;
-			ss >> imu_vals.linear_acceleration.y;
-			ss >> imu_vals.linear_acceleration.z;
-            imu_data_vals[t] = imu_vals;
+			double t = line[0];
+			timestamps.push_back(t);
+			imu_vals.angular_velocity.x = line[1];
+			imu_vals.angular_velocity.y = line[2];
+			imu_vals.angular_velocity.z = line[3];
+			imu_vals.linear_acceleration.x = line[4];
+			imu_vals.linear_acceleration.y = line[5];
+			imu_vals.linear_acceleration.z = line[6];
+			imu_data_vals[t] = imu_vals;
+
         }
     }
 }
@@ -137,9 +142,12 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	cout << cam0_images.at(1403715273262142976) << endl;
+	cout << "Finished Loading Data!!!!" << endl;
     // Create our VIO system
     sys = new VioManager();
+
+    // Set OpenCV threading
+    cv::setNumThreads(0);
 
     // Read in what mode we should be processing in (1=mono, 2=stereo)
     int max_cameras;
@@ -164,6 +172,7 @@ int main(int argc, char** argv) {
     // }
 
 	// Loop through data files (camera and imu)
+    unsigned num_images = 0;
 	for (auto timem : imu0_timestamps) {
 
         // Handle IMU measurement
@@ -174,7 +183,7 @@ int main(int argc, char** argv) {
             wm << m.angular_velocity.x, m.angular_velocity.y, m.angular_velocity.z;
             am << m.linear_acceleration.x, m.linear_acceleration.y, m.linear_acceleration.z;
             // send it to our VIO system
-            sys->feed_measurement_imu(timem, wm, am);
+            sys->feed_measurement_imu(timem/1000000000.0, wm, am);
         }
 
         // Handle LEFT camera
@@ -188,7 +197,7 @@ int main(int argc, char** argv) {
 				return 1;
 			}
 
-			cout << "img0 Height: " << img0.rows << "   Width: " << img0.cols << endl;
+			//cout << "img0 Height: " << img0.rows << "   Width: " << img0.cols << endl;
 
 			// Save to our temp variable
             has_left = true;
@@ -205,7 +214,8 @@ int main(int argc, char** argv) {
 					 << cam1_images_path << "/" << cam1_images.at(timem) << endl;
 				return 1;
 			}
-			cout << "img1 Height: " << img1.rows << "   Width: " << img1.cols << endl;
+
+			//cout << "img1 Height: " << img1.rows << "   Width: " << img1.cols << endl;
 
             // Save to our temp variable (use a right image that is near in time)
             // TODO: fix this logic as the left will still advance instead of waiting
@@ -272,7 +282,12 @@ int main(int argc, char** argv) {
             time_buffer = time;
             img0_buffer = img0.clone();
             img1_buffer = img1.clone();
+
+            num_images++;
         }
+
+        if (num_images == 500)
+            break;
 
     }
 
@@ -280,6 +295,7 @@ int main(int argc, char** argv) {
     delete sys;
 
     // // Done!
+	cout << "DONE!" << endl;
     return EXIT_SUCCESS;
 }
 

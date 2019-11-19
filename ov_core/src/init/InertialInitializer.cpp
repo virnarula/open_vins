@@ -71,7 +71,7 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
 
     // Return if both of these failed
     if(window_newest.empty() || window_secondnew.empty()) {
-        //ROS_WARN("InertialInitializer::initialize_with_imu(): unable to select window of IMU readings, not enough readings");
+        ROS_WARN("InertialInitializer::initialize_with_imu(): unable to select window of IMU readings, not enough readings");
         return false;
     }
 
@@ -84,6 +84,7 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
     double a_var = 0;
     for(IMUDATA data : window_newest) {
         a_var += (data.am-a_avg).dot(data.am-a_avg);
+		//cout << a_var << endl;
     }
     a_var = std::sqrt(a_var/((int)window_newest.size()-1));
 

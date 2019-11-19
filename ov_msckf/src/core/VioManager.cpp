@@ -45,7 +45,7 @@ VioManager::VioManager() {
 	state_options.do_calib_camera_pose =  false; // calib_cam_extrinsics
 	state_options.do_calib_camera_intrinsics = false; // calib_cam_intrinsics
 	state_options.do_calib_camera_timeoffset = false; // calib_cam_timeoffset
-	state_options.max_clone_size = 10; // max_clones
+	state_options.max_clone_size = 11; // max_clones
 	state_options.max_slam_features = 0; // max_slam
 	state_options.max_aruco_features = 1024; // max_aruco
 	state_options.num_cameras = 2; // max_cameras
@@ -144,12 +144,28 @@ VioManager::VioManager() {
 
         // Camera intrinsic properties
         Eigen::Matrix<double,8,1> cam_calib;
-        std::vector<double> matrix_k, matrix_d;
-        std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
-        std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
-		matrix_k = matrix_k_default; // cami_k
-		matrix_d = matrix_d_default; // cami_d
-        cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
+		if (i==0) {
+			std::vector<double> matrix_k, matrix_d;
+			std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
+			std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
+			matrix_k = matrix_k_default; // cami_k
+			matrix_d = matrix_d_default; // cami_d
+			cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
+		} else if (i==1) {
+			std::vector<double> matrix_k, matrix_d;
+			std::vector<double> matrix_k_default = {457.587,456.134,379.999,255.238};
+			std::vector<double> matrix_d_default = {-0.28368365,0.07451284,-0.00010473,-3.55590700e-05};
+			matrix_k = matrix_k_default; // cami_k
+			matrix_d = matrix_d_default; // cami_d
+			cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
+		} else {
+			std::vector<double> matrix_k, matrix_d;
+			std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
+			std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
+			matrix_k = matrix_k_default; // cami_k
+			matrix_d = matrix_d_default; // cami_d
+			cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
+		}
 
         // Save this representation in our state
         state->get_intrinsics_CAM(i)->set_value(cam_calib);
@@ -158,11 +174,20 @@ VioManager::VioManager() {
         // Our camera extrinsics transform
         Eigen::Matrix4d T_CtoI;
         std::vector<double> matrix_TCtoI;
-        std::vector<double> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+		std::vector<double> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+        std::vector<double> matrix_TtoI_default_1 = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975, 0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768, -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949, 0.0, 0.0, 0.0, 1.0};
+		std::vector<double> matrix_TtoI_default_2 = {0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556, 0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024, -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038, 0.0, 0.0, 0.0, 1.0};
 
         // Read in from ROS, and save into our eigen mat
-		matrix_TCtoI = matrix_TtoI_default; // T_CitoI
-        T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
+		if (i==0) {
+			matrix_TCtoI = matrix_TtoI_default_1; // T_CitoI
+		} else if (i == 1) {
+			matrix_TCtoI = matrix_TtoI_default_2; // T_CitoI
+		} else {
+			matrix_TCtoI = matrix_TtoI_default; // T_CitoI
+		}
+
+		T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
                 matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
                 matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
                 matrix_TCtoI.at(12),matrix_TCtoI.at(13),matrix_TCtoI.at(14),matrix_TCtoI.at(15);
@@ -226,10 +251,10 @@ VioManager::VioManager() {
     bool use_klt, use_aruco, do_downsizing;
 	use_klt = true; // use_klt
 	use_aruco = false; // use_aruco
-	num_pts = 500; // num_pts
+	num_pts = 400; // num_pts
 	fast_threshold = 10; // fast_threshold
-	grid_x = 10; // grid_x
-	grid_y = 8; // grid_y
+	grid_x = 5; // grid_x
+	grid_y = 3; // grid_y
 	min_px_dist = 10; // min_px_dist
 	knn_ratio = 0.85; // knn_ratio
 	do_downsizing = true; // downsize_aruco
@@ -281,7 +306,7 @@ VioManager::VioManager() {
     UpdaterOptions slam_options;
     UpdaterOptions aruco_options;
 	msckf_options.sigma_pix = 1; // up_msckf_sigma_px
-	msckf_options.chi2_multipler = 5; // up_msckf_chi2_multipler
+	msckf_options.chi2_multipler = 1; // up_msckf_chi2_multipler
 	slam_options.sigma_pix = 1; // up_slam_sigma_px
 	slam_options.chi2_multipler = 5; // up_slam_chi2_multipler
 	aruco_options.sigma_pix = 1; // up_aruco_sigma_px
@@ -329,7 +354,11 @@ VioManager::VioManager() {
     updaterMSCKF = new UpdaterMSCKF(msckf_options, featinit_options);
     updaterSLAM = new UpdaterSLAM(slam_options, aruco_options, featinit_options);
 
-
+    total_images = 0;
+    counted_images = 0;
+    total_tracking_time = 0.0;
+    total_filter_time = 0.0;
+    total_frame_time = 0.0;
 }
 
 
@@ -444,7 +473,6 @@ void VioManager::feed_measurement_simulation(double timestamp, const std::vector
 
 
 bool VioManager::try_to_initialize() {
-
         // Returns from our initializer
         double time0;
         Eigen::Matrix<double, 4, 1> q_GtoI0;
@@ -455,6 +483,7 @@ bool VioManager::try_to_initialize() {
 
         // Return if it failed
         if (!success) {
+			cout << "FAIL!!!!!!!!!" << endl;
             return false;
         }
 
@@ -484,7 +513,6 @@ bool VioManager::try_to_initialize() {
 
 
 void VioManager::do_feature_propagate_update(double timestamp) {
-
 
     //===================================================================================
     // State propagation, and clone augmentation
@@ -695,20 +723,46 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     }
     rT6 =  boost::posix_time::microsec_clock::local_time();
 
+    total_images++;
+    double frame_time = (rT6 - rT1).total_microseconds() * 1e-3;
+    double tracking_time = (rT2 - rT1).total_microseconds() * 1e-3;
+    double filter_time = (rT6 - rT2).total_microseconds() * 1e-3;
+
+    if (total_images >= 100) {
+        counted_images++;
+        total_tracking_time += tracking_time;
+        total_filter_time += filter_time;
+        total_frame_time += frame_time;
+
+        //cout << "Total time = " << total_time << " ms\n";
+        //cout << "Total images = " << total_images << "\n";
+        //cout << "Average time per frame = " << total_time / (double) total_images << " ms\n";
+        //cout << "Number of OpenCV threads = " << cv::getNumThreads() << "\n";
+    }
 
     //===================================================================================
     // Debug info, and stats tracking
     //===================================================================================
 
+    // Frame time
+    ROS_INFO("\u001b[34m[TIME]: %.4f ms for tracking\u001b[0m", tracking_time);
+    ROS_INFO("\u001b[34m[TIME]: %.4f ms for filter\u001b[0m", filter_time);
+    ROS_INFO("\u001b[34m[TIME]: %.4f ms for total\u001b[0m", frame_time);
+
+    //// Average time
+    ROS_INFO("\u001b[34m[AVERAGE TIME]: %.4f ms for tracking\u001b[0m", total_tracking_time / (double) counted_images);
+    ROS_INFO("\u001b[34m[AVERAGE TIME]: %.4f ms for filter\u001b[0m", total_filter_time / (double) counted_images);
+    ROS_INFO("\u001b[34m[AVERAGE TIME]: %.4f ms for total\u001b[0m", total_frame_time / (double) counted_images);
+
+    cout << "----\n";
 
     // Timing information
-    ROS_INFO("\u001b[34m[TIME]: %.4f seconds for tracking\u001b[0m",(rT2-rT1).total_microseconds() * 1e-6);
     ROS_INFO("\u001b[34m[TIME]: %.4f seconds for propagation\u001b[0m",(rT3-rT2).total_microseconds() * 1e-6);
     ROS_INFO("\u001b[34m[TIME]: %.4f seconds for MSCKF update (%d features)\u001b[0m",(rT4-rT3).total_microseconds() * 1e-6, (int)good_features_MSCKF.size());
     if(state->options().max_slam_features > 0)
         ROS_INFO("\u001b[34m[TIME]: %.4f seconds for SLAM update (%d delayed, %d update)\u001b[0m",(rT5-rT4).total_microseconds() * 1e-6, (int)feats_slam_UPDATE.size(), (int)feats_slam_DELAYED.size());
     ROS_INFO("\u001b[34m[TIME]: %.4f seconds for marginalization (%d clones in state)\u001b[0m",(rT6-rT5).total_microseconds() * 1e-6, (int)state->n_clones());
-    ROS_INFO("\u001b[34m[TIME]: %.4f seconds for total\u001b[0m",(rT6-rT1).total_microseconds() * 1e-6);
+
 
     // Update our distance traveled
     if(state->get_clones().find(timelastupdate) != state->get_clones().end()) {
@@ -718,12 +772,12 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     timelastupdate = timestamp;
 
     // Debug, print our current state
-    ROS_INFO("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)",
-            state->imu()->quat()(0),state->imu()->quat()(1),state->imu()->quat()(2),state->imu()->quat()(3),
-            state->imu()->pos()(0),state->imu()->pos()(1),state->imu()->pos()(2),distance);
-    ROS_INFO("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f",
-             state->imu()->bias_g()(0),state->imu()->bias_g()(1),state->imu()->bias_g()(2),
-             state->imu()->bias_a()(0),state->imu()->bias_a()(1),state->imu()->bias_a()(2));
+    //ROS_INFO("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)",
+    //        state->imu()->quat()(0),state->imu()->quat()(1),state->imu()->quat()(2),state->imu()->quat()(3),
+    //        state->imu()->pos()(0),state->imu()->pos()(1),state->imu()->pos()(2),distance);
+    //ROS_INFO("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f",
+    //         state->imu()->bias_g()(0),state->imu()->bias_g()(1),state->imu()->bias_g()(2),
+    //         state->imu()->bias_a()(0),state->imu()->bias_a()(1),state->imu()->bias_a()(2));
 
 
     // Debug for camera imu offset

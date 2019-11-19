@@ -245,6 +245,11 @@ namespace ov_msckf {
 
         // Timing variables
         boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6;
+        unsigned total_images;
+        unsigned counted_images;
+        double total_tracking_time;
+        double total_filter_time;
+        double total_frame_time;
 
         // Track how much distance we have traveled
         double timelastupdate = -1;

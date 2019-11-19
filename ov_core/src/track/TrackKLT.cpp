@@ -282,14 +282,12 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
 
 
     // Timing information
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for pyramid",(rT2-rT1).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for detection",(rT3-rT2).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for temporal klt",(rT4-rT3).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for stereo klt",(rT5-rT4).total_microseconds() * 1e-6);
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for feature DB update (%d features)",(rT6-rT5).total_microseconds() * 1e-6, (int)good_left.size());
-    //ROS_INFO("[TIME-KLT]: %.4f seconds for total",(rT6-rT1).total_microseconds() * 1e-6);
-
-
+    ROS_INFO("[TIME-KLT]: %.4f ms for pyramid",(rT2-rT1).total_microseconds() * 1e-3);
+    ROS_INFO("[TIME-KLT]: %.4f ms for detection",(rT3-rT2).total_microseconds() * 1e-3);
+    ROS_INFO("[TIME-KLT]: %.4f ms for temporal klt",(rT4-rT3).total_microseconds() * 1e-3);
+    ROS_INFO("[TIME-KLT]: %.4f ms for stereo klt",(rT5-rT4).total_microseconds() * 1e-3);
+    ROS_INFO("[TIME-KLT]: %.4f ms for feature DB update (%d features)",(rT6-rT5).total_microseconds() * 1e-3, (int)good_left.size());
+    ROS_INFO("[TIME-KLT]: %.4f ms for total",(rT6-rT1).total_microseconds() * 1e-3);
 }
 
 void TrackKLT::perform_detection_monocular(const std::vector<cv::Mat> &img0pyr, std::vector<cv::KeyPoint> &pts0, std::vector<size_t> &ids0) {
@@ -365,6 +363,8 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
                                         std::vector<cv::KeyPoint> &pts0, std::vector<cv::KeyPoint> &pts1,
                                         std::vector<size_t> &ids0, std::vector<size_t> &ids1) {
 
+    rTDetect1 = boost::posix_time::microsec_clock::local_time();
+
     // Create a 2D occupancy grid for this current image
     // Note that we scale this down, so that each grid point is equal to a set of pixels
     // This means that we will reject points that less then grid_px_size points away then existing features
@@ -436,6 +436,8 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
     if(pts0_new.empty())
         return;
 
+    rTDetect2 = boost::posix_time::microsec_clock::local_time();
+
     // Now do KLT tracking to get the valid projections
     // Note: we have a pretty big window size here since our projection might be bad
     // Note: but this might cause failure in cases of repeated textures (eg. checkerboard)
@@ -460,6 +462,10 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
         }
     }
 
+    rTDetect3 = boost::posix_time::microsec_clock::local_time();
+
+    ROS_INFO("[TIME-DETECTION]: %.4f ms for Grid", (rTDetect2 - rTDetect1).total_microseconds() * 1e-3);
+    ROS_INFO("[TIME-DETECTION]: %.4f ms for KLT", (rTDetect3 - rTDetect2).total_microseconds() * 1e-3);
 }
 
 
@@ -467,6 +473,8 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
                                 std::vector<cv::KeyPoint>& kpts0, std::vector<cv::KeyPoint>& kpts1,
                                 size_t id0, size_t id1,
                                 std::vector<uchar>& mask_out) {
+
+    rTMatch1 = boost::posix_time::microsec_clock::local_time();
 
     // We must have equal vectors
     assert(kpts0.size() == kpts1.size());
@@ -496,6 +504,7 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
     cv::TermCriteria term_crit = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 15, 0.01);
     cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0, pts1, mask_klt, error, win_size, pyr_levels, term_crit, cv::OPTFLOW_USE_INITIAL_FLOW);
 
+    rTMatch2 = boost::posix_time::microsec_clock::local_time();
 
     // Normalize these points, so we can then do ransac
     // We don't want to do ransac on distorted image uvs since the mapping is nonlinear
@@ -504,6 +513,8 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
         pts0_n.push_back(undistort_point(pts0.at(i),id0));
         pts1_n.push_back(undistort_point(pts1.at(i),id1));
     }
+
+    rTMatch3 = boost::posix_time::microsec_clock::local_time();
 
     // Do RANSAC outlier rejection (note since we normalized the max pixel error is now in the normalized cords)
     std::vector<uchar> mask_rsc;
@@ -524,6 +535,11 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
         kpts1.at(i).pt = pts1.at(i);
     }
 
+    rTMatch4 = boost::posix_time::microsec_clock::local_time();
+
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT", (rTMatch2 - rTMatch1).total_microseconds() * 1e-3);
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort", (rTMatch3 - rTMatch2).total_microseconds() * 1e-3);
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC", (rTMatch4 - rTMatch3).total_microseconds() * 1e-3);
 }
 
 
