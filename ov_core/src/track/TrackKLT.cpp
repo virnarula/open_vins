@@ -281,13 +281,23 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     rT6 =  boost::posix_time::microsec_clock::local_time();
 
 
+	double pyramid_time = (rT2-rT1).total_microseconds() * 1e-3;
+	double detection_time = (rT3-rT2).total_microseconds() * 1e-3;
+	double temporal_klt_time = (rT4-rT3).total_microseconds() * 1e-3;
+	double stereo_klt_time = (rT5-rT4).total_microseconds() * 1e-3;
+	double feature_db_update_time = (rT6-rT5).total_microseconds() * 1e-3;
+	double total_feed_stereo_time = (rT6-rT1).total_microseconds() * 1e-3;
+
+	total_pyramid_time += pyramid_time;
+	total_detection_time += detection_time;
+	total_temporal_klt_time += temporal_klt_time;
+	total_stereo_klt_time += stereo_klt_time;
+	total_feature_db_update_time += feature_db_update_time;
+	total_total_feed_stereo_time += total_feed_stereo_time;
+
+	feed_stereo_count++;
+	
     // Timing information
-    ROS_INFO("[TIME-KLT]: %.4f ms for pyramid",(rT2-rT1).total_microseconds() * 1e-3);
-    ROS_INFO("[TIME-KLT]: %.4f ms for detection",(rT3-rT2).total_microseconds() * 1e-3);
-    ROS_INFO("[TIME-KLT]: %.4f ms for temporal klt",(rT4-rT3).total_microseconds() * 1e-3);
-    ROS_INFO("[TIME-KLT]: %.4f ms for stereo klt",(rT5-rT4).total_microseconds() * 1e-3);
-    ROS_INFO("[TIME-KLT]: %.4f ms for feature DB update (%d features)",(rT6-rT5).total_microseconds() * 1e-3, (int)good_left.size());
-    ROS_INFO("[TIME-KLT]: %.4f ms for total",(rT6-rT1).total_microseconds() * 1e-3);
 	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for KLT_temporal_left", total_KLT_temporal_left/total_temporal_left_calls);
 	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for Undistort_temporal_left", total_undistort_temporal_left/total_temporal_left_calls);
 	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for RANSAC_temporal_left", total_RANSAC_temporal_left/total_temporal_left_calls);
@@ -297,6 +307,20 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
 	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for KLT_stereo", total_KLT_stereo/total_stereo_calls);
 	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for Undistort_stereo", total_undistort_stereo/total_stereo_calls);
 	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for RANSAC_stereo", total_RANSAC_stereo/total_stereo_calls);
+	
+    ROS_INFO("[TIME-KLT]: %.4f ms for pyramid", pyramid_time);
+    ROS_INFO("[TIME-KLT]: %.4f ms for detection", detection_time);
+    ROS_INFO("[TIME-KLT]: %.4f ms for temporal klt", temporal_klt_time);
+    ROS_INFO("[TIME-KLT]: %.4f ms for stereo klt", stereo_klt_time);
+    ROS_INFO("[TIME-KLT]: %.4f ms for feature DB update (%d features)", feature_db_update_time);
+    ROS_INFO("[TIME-KLT]: %.4f ms for total", total_feed_stereo_time);
+
+    ROS_INFO("[AVERAGE-KLT]: %.4f ms for pyramid", total_pyramid_time/feed_stereo_count);
+    ROS_INFO("[AVERAGE-KLT]: %.4f ms for detection", total_detection_time/feed_stereo_count);
+    ROS_INFO("[AVERAGE-KLT]: %.4f ms for temporal klt", total_temporal_klt_time/feed_stereo_count);
+    ROS_INFO("[AVERAGE-KLT]: %.4f ms for stereo klt", total_stereo_klt_time/feed_stereo_count);
+    ROS_INFO("[AVERAGE-KLT]: %.4f ms for feature DB update (%d features)", total_feature_db_update_time/feed_stereo_count);
+    ROS_INFO("[AVERAGE-KLT]: %.4f ms for total", total_total_feed_stereo_time/feed_stereo_count);
 }
 
 void TrackKLT::perform_detection_monocular(const std::vector<cv::Mat> &img0pyr, std::vector<cv::KeyPoint> &pts0, std::vector<size_t> &ids0) {
@@ -644,8 +668,6 @@ void TrackKLT::perform_matching_left(const std::vector<cv::Mat>& img0pyr, const 
 	total_RANSAC_temporal_left += RANSAC_time;
 
 	total_temporal_left_calls++;
-	ROS_INFO("KLT TEMP LEFT:  %.4f ", total_KLT_temporal_left);
-	ROS_INFO("TEMP LEFT:  %d ", total_temporal_left_calls);
     ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal_left", KLT_time);
     ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal_left", undistort_time);
     ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal_left", RANSAC_time);
