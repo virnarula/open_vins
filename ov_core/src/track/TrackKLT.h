@@ -125,6 +125,8 @@ namespace ov_core {
          */
         void perform_matching(const std::vector<cv::Mat> &img0pyr, const std::vector<cv::Mat> &img1pyr, std::vector<cv::KeyPoint> &pts0,
                               std::vector<cv::KeyPoint> &pts1, size_t id0, size_t id1, std::vector<uchar> &mask_out);
+		void perform_matching_stereo(const std::vector<cv::Mat> &img0pyr, const std::vector<cv::Mat> &img1pyr, std::vector<cv::KeyPoint> &pts0,
+                              std::vector<cv::KeyPoint> &pts1, size_t id0, size_t id1, std::vector<uchar> &mask_out);
 
         // Timing variables
         boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6, rT7;
@@ -135,6 +137,16 @@ namespace ov_core {
         // matching timing
         boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
 
+		// total time
+		unsigned total_temporal_calls;
+		unsigned total_stereo_calls;
+		double total_KLT_temporal;
+		double total_KLT_stereo;
+		double total_undistort_temporal;
+		double total_undistort_stereo;
+		double total_RANSAC_temporal;
+		double total_RANSAC_stereo;
+		
         // Parameters for our FAST grid detector
         int threshold;
         int grid_x;
