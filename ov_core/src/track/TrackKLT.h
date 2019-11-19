@@ -138,22 +138,21 @@ namespace ov_core {
         // detection timing
         boost::posix_time::ptime rTDetect1, rTDetect2, rTDetect3;
 
-        // matching timing
-        boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
+
 
 		// total time
-		unsigned total_temporal_left_calls;
-		unsigned total_temporal_right_calls;
-		unsigned total_stereo_calls;
-		double total_KLT_temporal_left;
-		double total_KLT_temporal_right;
-		double total_KLT_stereo;
-		double total_undistort_temporal_left;
-		double total_undistort_temporal_right;
-		double total_undistort_stereo;
-		double total_RANSAC_temporal_left;
-		double total_RANSAC_temporal_right;
-		double total_RANSAC_stereo;
+		unsigned total_temporal_left_calls = 0;
+		unsigned total_temporal_right_calls = 0;
+		unsigned total_stereo_calls = 0;
+		double total_KLT_temporal_left = 0.0;
+		double total_KLT_temporal_right = 0.0;
+		double total_KLT_stereo = 0.0;
+		double total_undistort_temporal_left = 0.0;
+		double total_undistort_temporal_right = 0.0;
+		double total_undistort_stereo = 0.0;
+		double total_RANSAC_temporal_left = 0.0;
+		double total_RANSAC_temporal_right = 0.0;
+		double total_RANSAC_stereo = 0.0;
 		
         // Parameters for our FAST grid detector
         int threshold;

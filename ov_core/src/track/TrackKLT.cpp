@@ -483,6 +483,9 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
                                 size_t id0, size_t id1,
                                 std::vector<uchar>& mask_out) {
 
+	// matching timing
+	boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
+	
     rTMatch1 = boost::posix_time::microsec_clock::local_time();
 
     // We must have equal vectors
@@ -550,12 +553,12 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
 	double undistort_time = (rTMatch3 - rTMatch2).total_microseconds() * 1e-3;
 	double RANSAC_time = (rTMatch4 - rTMatch3).total_microseconds() * 1e-3;
 
-	total_KLT_temporal += KLT_time;
-	total_undistort_temporal += undistort_time;
-	total_RANSAC_temporal += RANSAC_time;
+	// total_KLT_temporal += KLT_time;
+	// total_undistort_temporal += undistort_time;
+	// total_RANSAC_temporal += RANSAC_time;
 
-	total_temporal_calls++;
-	cout << "temp calls: " << total_temporal_calls << endl;
+	// total_temporal_calls++;
+	// cout << "temp calls: " << total_temporal_calls << endl;
     ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal", KLT_time);
     ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal", undistort_time);
     ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal", RANSAC_time);
@@ -566,6 +569,9 @@ void TrackKLT::perform_matching_left(const std::vector<cv::Mat>& img0pyr, const 
                                 size_t id0, size_t id1,
                                 std::vector<uchar>& mask_out) {
 
+	// matching timing
+	boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
+	
     rTMatch1 = boost::posix_time::microsec_clock::local_time();
 
     // We must have equal vectors
@@ -638,10 +644,11 @@ void TrackKLT::perform_matching_left(const std::vector<cv::Mat>& img0pyr, const 
 	total_RANSAC_temporal_left += RANSAC_time;
 
 	total_temporal_left_calls++;
-
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal", KLT_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal", undistort_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal", RANSAC_time);
+	ROS_INFO("KLT TEMP LEFT:  %.4f ", total_KLT_temporal_left);
+	ROS_INFO("TEMP LEFT:  %d ", total_temporal_left_calls);
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal_left", KLT_time);
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal_left", undistort_time);
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal_left", RANSAC_time);
 }
 
 void TrackKLT::perform_matching_right(const std::vector<cv::Mat>& img0pyr, const std::vector<cv::Mat>& img1pyr,
@@ -649,7 +656,10 @@ void TrackKLT::perform_matching_right(const std::vector<cv::Mat>& img0pyr, const
                                 size_t id0, size_t id1,
                                 std::vector<uchar>& mask_out) {
 
-    rTMatch1 = boost::posix_time::microsec_clock::local_time();
+	// matching timing
+	boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
+	
+	rTMatch1 = boost::posix_time::microsec_clock::local_time();
 
     // We must have equal vectors
     assert(kpts0.size() == kpts1.size());
@@ -721,9 +731,9 @@ void TrackKLT::perform_matching_right(const std::vector<cv::Mat>& img0pyr, const
 	total_RANSAC_temporal_right += RANSAC_time;
 
 	total_temporal_right_calls++;
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal", KLT_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal", undistort_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal", RANSAC_time);
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal_right", KLT_time);
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal_right", undistort_time);
+    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal_right", RANSAC_time);
 }
 
 void TrackKLT::perform_matching_stereo(const std::vector<cv::Mat>& img0pyr, const std::vector<cv::Mat>& img1pyr,
@@ -731,6 +741,9 @@ void TrackKLT::perform_matching_stereo(const std::vector<cv::Mat>& img0pyr, cons
                                 size_t id0, size_t id1,
                                 std::vector<uchar>& mask_out) {
 
+	// matching timing
+	boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
+	
     rTMatch1 = boost::posix_time::microsec_clock::local_time();
 
     // We must have equal vectors
