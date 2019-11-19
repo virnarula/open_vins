@@ -255,14 +255,35 @@ void UpdaterMSCKF::update(State *state, std::vector<Feature*>& feature_vec) {
     StateHelper::EKFUpdate(state, Hx_order_big, Hx_big, res_big, R_big);
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
+	msckf_clean_time = (rT1-rT0).total_microseconds() * 1e-6;
+	msckf_triang_time = (rT2-rT1).total_microseconds() * 1e-6;
+	msckf_create_sys_time = (rT3-rT2).total_microseconds() * 1e-6;
+	msckf_compress_sys_time = (rT4-rT3).total_microseconds() * 1e-6;
+	msckf_update_state_time = (rT5-rT4).total_microseconds() * 1e-6;
+	msckf_total_time = (rT5-rT1).total_microseconds() * 1e-6;
+	
+	total_calls++;
+	total_msckf_clean_time += msckf_clean_time;
+	total_msckf_triang_time += msckf_triang_time;
+	total_msckf_create_sys_time += msckf_create_sys_time;
+	total_msckf_compress_sys_time += msckf_compress_sys_time;
+	total_msckf_update_state_time += msckf_update_state_time;
+	total_msckf_total_time += msckf_total_time;
+	
     // Debug print timing information
-    ROS_INFO("[MSCKF-UP]: %.4f seconds to clean",(rT1-rT0).total_microseconds() * 1e-6);
-    ROS_INFO("[MSCKF-UP]: %.4f seconds to triangulate",(rT2-rT1).total_microseconds() * 1e-6);
-    ROS_INFO("[MSCKF-UP]: %.4f seconds create system (%d features)",(rT3-rT2).total_microseconds() * 1e-6, (int)feature_vec.size());
-    ROS_INFO("[MSCKF-UP]: %.4f seconds compress system",(rT4-rT3).total_microseconds() * 1e-6);
-    ROS_INFO("[MSCKF-UP]: %.4f seconds update state (%d size)",(rT5-rT4).total_microseconds() * 1e-6, (int)res_big.rows());
-    ROS_INFO("[MSCKF-UP]: %.4f seconds total",(rT5-rT1).total_microseconds() * 1e-6);
+    ROS_INFO("[MSCKF-UP]: %.4f seconds to clean", msckf_clean_time);
+    ROS_INFO("[MSCKF-UP]: %.4f seconds to triangulate", msckf_triang_time);
+    ROS_INFO("[MSCKF-UP]: %.4f seconds create system (%d features)", msckf_create_sys_time);
+    ROS_INFO("[MSCKF-UP]: %.4f seconds compress system", msckf_compress_sys_time);
+    ROS_INFO("[MSCKF-UP]: %.4f seconds update state (%d size)", msckf_update_state_time);
+    ROS_INFO("[MSCKF-UP]: %.4f seconds total", msckf_total_time);
 
+	ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds to clean", total_msckf_clean_time/total_calls);
+    ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds to triangulate", total_msckf_triang_time/total_calls);
+    ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds create system (%d features)", total_msckf_create_sys_time/total_calls);
+    ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds compress system", total_msckf_compress_sys_time/total_calls);
+    ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds update state (%d size)", totla_msckf_update_state_time/total_calls);
+    ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds total", total_msckf_total_time/total_calls);
 }
 
 

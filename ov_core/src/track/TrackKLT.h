@@ -139,7 +139,7 @@ namespace ov_core {
         boost::posix_time::ptime rTDetect1, rTDetect2, rTDetect3;
 
 
-		// average total KLT time
+		// average total KLT/FeedStereo time
 		unsigned feed_stereo_count = 0;
 		double total_pyramid_time = 0.0;
 		double total_detection_time = 0.0;
