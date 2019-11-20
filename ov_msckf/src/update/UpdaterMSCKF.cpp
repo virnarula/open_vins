@@ -255,12 +255,12 @@ void UpdaterMSCKF::update(State *state, std::vector<Feature*>& feature_vec) {
     StateHelper::EKFUpdate(state, Hx_order_big, Hx_big, res_big, R_big);
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
-	msckf_clean_time = (rT1-rT0).total_microseconds() * 1e-6;
-	msckf_triang_time = (rT2-rT1).total_microseconds() * 1e-6;
-	msckf_create_sys_time = (rT3-rT2).total_microseconds() * 1e-6;
-	msckf_compress_sys_time = (rT4-rT3).total_microseconds() * 1e-6;
-	msckf_update_state_time = (rT5-rT4).total_microseconds() * 1e-6;
-	msckf_total_time = (rT5-rT1).total_microseconds() * 1e-6;
+	double msckf_clean_time = (rT1-rT0).total_microseconds() * 1e-6;
+	double msckf_triang_time = (rT2-rT1).total_microseconds() * 1e-6;
+	double msckf_create_sys_time = (rT3-rT2).total_microseconds() * 1e-6;
+	double msckf_compress_sys_time = (rT4-rT3).total_microseconds() * 1e-6;
+	double msckf_update_state_time = (rT5-rT4).total_microseconds() * 1e-6;
+	double msckf_total_time = (rT5-rT1).total_microseconds() * 1e-6;
 	
 	total_calls++;
 	total_msckf_clean_time += msckf_clean_time;
@@ -282,7 +282,7 @@ void UpdaterMSCKF::update(State *state, std::vector<Feature*>& feature_vec) {
     ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds to triangulate", total_msckf_triang_time/total_calls);
     ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds create system", total_msckf_create_sys_time/total_calls);
     ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds compress system", total_msckf_compress_sys_time/total_calls);
-    ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds update state", totla_msckf_update_state_time/total_calls);
+    ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds update state", total_msckf_update_state_time/total_calls);
     ROS_INFO("[AVERAGE-MSCKF-UP]: %.4f seconds total", total_msckf_total_time/total_calls);
 }
 
