@@ -250,6 +250,7 @@ VioManager::VioManager() {
     double knn_ratio;
     bool use_klt, use_aruco, do_downsizing;
 	use_klt = true; // use_klt
+	//use_klt = false; // dont use_klt
 	use_aruco = false; // use_aruco
 	num_pts = 400; // num_pts
 	fast_threshold = 10; // fast_threshold
@@ -733,6 +734,10 @@ void VioManager::do_feature_propagate_update(double timestamp) {
         total_tracking_time += tracking_time;
         total_filter_time += filter_time;
         total_frame_time += frame_time;
+
+        frame_tracking_time.push_back(tracking_time);
+        frame_filter_time.push_back(filter_time);
+        frame_total_time.push_back(frame_time);
 
         //cout << "Total time = " << total_time << " ms\n";
         //cout << "Total images = " << total_images << "\n";

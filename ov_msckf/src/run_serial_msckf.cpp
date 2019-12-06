@@ -286,9 +286,48 @@ int main(int argc, char** argv) {
             num_images++;
         }
 
-        if (num_images == 500)
-            break;
+        //if (num_images == 500)
+        //    break;
 
+    }
+
+    // Dump frame times
+    {
+        ofstream output_file;
+        output_file.open("times.csv", std::ios::out);
+
+        auto tracker_times = sys->get_tracker_times();
+        auto filter_times = sys->get_filter_times();
+        auto total_times = sys->get_total_times();
+
+        output_file << "# Frame Tracker Filter Total\n";
+
+        for (unsigned i = 0; i < total_times.size(); i++) {
+            output_file << i << " " << tracker_times[i] << " " << filter_times[i] << " " << total_times[i] << endl;
+        }
+
+        //output_file << "Tracker,";
+        //auto tracker_times = sys->get_tracker_times();
+        //for (auto &time : tracker_times) {
+        //    output_file << time << ",";
+        //}
+        //output_file << std::endl;
+
+        //output_file << "Filter,";
+        //auto filter_times = sys->get_filter_times();
+        //for (auto &time : filter_times) {
+        //    output_file << time << ",";
+        //}
+        //output_file << std::endl;
+
+        //output_file << "Total,";
+        //auto total_times = sys->get_total_times();
+        //for (auto &time : total_times) {
+        //    output_file << time << ",";
+        //}
+        //output_file << std::endl;
+
+        output_file.close();
     }
 
     // Finally delete our system

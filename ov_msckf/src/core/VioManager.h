@@ -193,7 +193,17 @@ namespace ov_msckf {
             return aruco_feats;
         }
 
+        std::vector<double>& get_tracker_times() {
+            return frame_tracking_time;
+        }
 
+        std::vector<double>& get_filter_times() {
+            return frame_filter_time;
+        }
+
+        std::vector<double>& get_total_times() {
+            return frame_total_time;
+        }
 
     protected:
 
@@ -250,6 +260,9 @@ namespace ov_msckf {
         double total_tracking_time;
         double total_filter_time;
         double total_frame_time;
+        std::vector<double> frame_tracking_time;
+        std::vector<double> frame_filter_time;
+        std::vector<double> frame_total_time;
 
         // Track how much distance we have traveled
         double timelastupdate = -1;
