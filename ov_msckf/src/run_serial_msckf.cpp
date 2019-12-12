@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
 	load_images(cam0_filename, cam0_images, cam0_timestamps);
 	load_images(cam1_filename, cam1_images, cam1_timestamps);
 	load_imu_data(imu0_filename, imu0_vals, imu0_timestamps);
-	//cout << "WTF2" << endl;
+
 
 	cout << "cam0 images: " << cam0_images.size() << "  cam1 images: " << cam1_images.size() << "  imu0 data: " << imu0_vals.size() << endl;
 	if (cam0_images.size() != cam1_images.size()) {
@@ -196,8 +196,6 @@ int main(int argc, char** argv) {
 					 << cam0_images_path << "/" << cam0_images.at(timem) << endl;
 				return 1;
 			}
-
-			//cout << "img0 Height: " << img0.rows << "   Width: " << img0.cols << endl;
 
 			// Save to our temp variable
             has_left = true;
@@ -305,27 +303,6 @@ int main(int argc, char** argv) {
         for (unsigned i = 0; i < total_times.size(); i++) {
             output_file << i << " " << tracker_times[i] << " " << filter_times[i] << " " << total_times[i] << endl;
         }
-
-        //output_file << "Tracker,";
-        //auto tracker_times = sys->get_tracker_times();
-        //for (auto &time : tracker_times) {
-        //    output_file << time << ",";
-        //}
-        //output_file << std::endl;
-
-        //output_file << "Filter,";
-        //auto filter_times = sys->get_filter_times();
-        //for (auto &time : filter_times) {
-        //    output_file << time << ",";
-        //}
-        //output_file << std::endl;
-
-        //output_file << "Total,";
-        //auto total_times = sys->get_total_times();
-        //for (auto &time : total_times) {
-        //    output_file << time << ",";
-        //}
-        //output_file << std::endl;
 
         output_file.close();
     }
