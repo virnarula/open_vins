@@ -8,7 +8,7 @@ Here are the install steps assuming ROS kinetic or melodic are installed:
 sudo apt-get install python-catkin-tools
 mkdir -p ~/workspace/catkin_ws_ov/src/
 cd ~/workspace/catkin_ws_ov/src/
-git clone https://github.com/rpng/open_vins/
+git clone https://github.com/ILLIXR/open_vins.git
 cd ..
 catkin build
 ```
