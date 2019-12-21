@@ -1,4 +1,4 @@
-*__NOTE: For instrcutions on how to use OpenVINS for ILLIXR see the ILLIXR_INSTRUCTIONS.MD__*
+*__NOTE: For instructions on how to use OpenVINS for ILLIXR see the ILLIXR_INSTRUCTIONS.MD__*
 
 # Open VINS
 
