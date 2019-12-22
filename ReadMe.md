@@ -1,8 +1,6 @@
-*__NOTE: For instructions on how to use OpenVINS for ILLIXR see the ILLIXR_INSTRUCTIONS.MD__*
+**Part of [ILLIXR](https://github.com/ILLIXR/ILLIXR), the Illinios Extended Reality Benchmark Suite. For instructions on how to use OpenVINS for ILLIXR see the ILLIXR_INSTRUCTIONS.MD**
 
 # Open VINS
-
-Part of [ILLIXR](https://github.com/ILLIXR/ILLIXR), the Illinios Extended Reality Benchmark Suite.
 
 Welcome to the Open VINS project!
 The Open VINS project houses some core computer vision code along with a state-of-the art filter-based visual-inertial estimator.
