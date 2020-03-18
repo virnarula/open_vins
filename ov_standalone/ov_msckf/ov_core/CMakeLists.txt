@@ -75,13 +75,10 @@ add_library(ov_core_lib STATIC
 )
 
 
-install(TARGETS ov_core_lib DESTINATION lib)
-install(FILES src/track/TrackAruco.h src/track/TrackKLT.h src/track/TrackDescriptor.h src/track/TrackBase.h src/types/Type.h src/types/JPLQuat.h src/types/IMU.h src/types/Landmark.h src/types/PoseJPL.h src/types/Vec.h  DESTINATION include)
+# install(TARGETS ov_core_lib DESTINATION lib)
+# install(FILES src/track/TrackAruco.h src/track/TrackKLT.h src/track/TrackDescriptor.h src/track/TrackBase.h src/types/Type.h src/types/JPLQuat.h src/types/IMU.h src/types/Landmark.h src/types/PoseJPL.h src/types/Vec.h  DESTINATION include)
 
-# target_include_directories(ov_core_lib PUBLIC
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#     $<INSTALL_INTERFACE:include>
-#     PRIVATE src)
+target_include_directories(ov_core_lib PUBLIC src)
 
 # target_link_libraries(ov_core_lib ${thirdparty_libraries})
 

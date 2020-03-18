@@ -213,7 +213,7 @@ VioManager::VioManager() {
     }
 
     // Debug message
-    ROS_INFO("=====================================");
+    //ROS_INFO("=====================================");
 
     //===================================================================================
     //===================================================================================
@@ -426,10 +426,12 @@ void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Ma
     // If we do not have VIO initialization, then try to initialize
     // TODO: Or if we are trying to reset the system, then do that here!
     if(!is_initialized_vio) {
+		std::cout << "Uninitialized" << std::endl;
         is_initialized_vio = try_to_initialize();
         if(!is_initialized_vio) return;
     }
 
+	std::cout << "Feed stereo" << std::endl;
     // Call on our propagate and update function
     do_feature_propagate_update(timestamp);
 
@@ -437,40 +439,40 @@ void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Ma
 
 
 
-void VioManager::feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
+// void VioManager::feed_measurement_simulation(double timestamp, const std::vector<int> &camids, const std::vector<std::vector<std::pair<size_t,Eigen::VectorXf>>> &feats) {
 
-    // Start timing
-    rT1 =  boost::posix_time::microsec_clock::local_time();
+//     // Start timing
+//     rT1 =  boost::posix_time::microsec_clock::local_time();
 
-    // Check if we actually have a simulated tracker
-    TrackSIM *trackSIM = dynamic_cast<TrackSIM*>(trackFEATS);
-    if(trackSIM == nullptr) {
-        //delete trackFEATS; //(fix this error in the future)
-        trackFEATS = new TrackSIM(state->options().max_aruco_features);
-        trackFEATS->set_calibration(camera_calib, camera_fisheye);
-		std::cout << "[SIM]: casting our tracker to a TrackSIM object!" << std::endl;
-    }
+//     // Check if we actually have a simulated tracker
+//     TrackSIM *trackSIM = dynamic_cast<TrackSIM*>(trackFEATS);
+//     if(trackSIM == nullptr) {
+//         //delete trackFEATS; //(fix this error in the future)
+//         trackFEATS = new TrackSIM(state->options().max_aruco_features);
+//         trackFEATS->set_calibration(camera_calib, camera_fisheye);
+// 		std::cout << "[SIM]: casting our tracker to a TrackSIM object!" << std::endl;
+//     }
 
-    // Cast the tracker to our simulation tracker
-    trackSIM = dynamic_cast<TrackSIM*>(trackFEATS);
-    trackSIM->set_width_height(camera_wh);
+//     // Cast the tracker to our simulation tracker
+//     trackSIM = dynamic_cast<TrackSIM*>(trackFEATS);
+//     trackSIM->set_width_height(camera_wh);
 
-    // Feed our simulation tracker
-    trackSIM->feed_measurement_simulation(timestamp, camids, feats);
-    rT2 =  boost::posix_time::microsec_clock::local_time();
+//     // Feed our simulation tracker
+//     trackSIM->feed_measurement_simulation(timestamp, camids, feats);
+//     rT2 =  boost::posix_time::microsec_clock::local_time();
 
-    // If we do not have VIO initialization, then return an error
-    if(!is_initialized_vio) {
-		std::cout << "[SIM]: your vio system should already be initialized before simulating features!!!" << std::endl;
-		std::cout << "[SIM]: initialize your system first before calling feed_measurement_simulation()!!!!" << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
+//     // If we do not have VIO initialization, then return an error
+//     if(!is_initialized_vio) {
+// 		std::cout << "[SIM]: your vio system should already be initialized before simulating features!!!" << std::endl;
+// 		std::cout << "[SIM]: initialize your system first before calling feed_measurement_simulation()!!!!" << std::endl;
+//         std::exit(EXIT_FAILURE);
+//     }
 
-    // Call on our propagate and update function
-    do_feature_propagate_update(timestamp);
+//     // Call on our propagate and update function
+//     do_feature_propagate_update(timestamp);
 
 
-}
+// }
 
 
 bool VioManager::try_to_initialize() {
@@ -503,7 +505,7 @@ bool VioManager::try_to_initialize() {
 
         // Else we are good to go, print out our stats
 		std::cout << "\033[0;32m[INIT]: orientation = " << state->imu()->quat()(0) << ", " << state->imu()->quat()(1) << ", " << state->imu()->quat()(2) << ", " << state->imu()->quat()(3) <<"\033[0m" << std::endl;
-		std::cout << "\033[0;32m[INIT]: bias gyro = " << state->imu()->bias_g()(0) << ", " << state->imu()->bias_g()(1) << ", " << state->imu()->bias_g()(2) << "\033[0m", << std::endl;
+		std::cout << "\033[0;32m[INIT]: bias gyro = " << state->imu()->bias_g()(0) << ", " << state->imu()->bias_g()(1) << ", " << state->imu()->bias_g()(2) << "\033[0m" << std::endl;
 		std::cout << "\033[0;32m[INIT]: velocity = " << state->imu()->vel()(0) << ", " << state->imu()->vel()(1) << ", " << state->imu()->vel()(2) << "\033[0m" << std::endl;
 		std::cout << "\033[0;32m[INIT]: bias accel = " << state->imu()->bias_a()(0) << ", " << state->imu()->bias_a()(1) << ", " << state->imu()->bias_a()(2) << "\033[0m" << std::endl;
 		std::cout << "\033[0;32m[INIT]: position = " << state->imu()->pos()(0) << ", " << state->imu()->pos()(1) << ", " << state->imu()->pos()(2) << "\033[0m" << std::endl;
@@ -521,7 +523,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 
     // Return if the camera measurement is out of order
     if(state->timestamp() >= timestamp) {
-		std::cout "image received out of order (prop dt = " << (timestamp-state->timestamp()) << ")" << std::endl;
+		std::cout << "image received out of order (prop dt = " << (timestamp-state->timestamp()) << ")" << std::endl;
         return;
     }
 

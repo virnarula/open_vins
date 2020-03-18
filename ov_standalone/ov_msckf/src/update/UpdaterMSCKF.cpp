@@ -274,7 +274,7 @@ void UpdaterMSCKF::update(State *state, std::vector<Feature*>& feature_vec) {
 	std::cout << "[MSCKF-UP]: " << msckf_clean_time << " seconds to clean" << std::endl;
 	std::cout << "[MSCKF-UP]: " << msckf_triang_time << " seconds to triangulate" << std::endl;
 	std::cout << "[MSCKF-UP]: " << msckf_create_sys_time << " seconds create system (" << (int) feature_vec.size() << " features)" << std::endl;
-	std::cout << "[MSCKF-UP]: " << msckf_compress_sys_time < " seconds compress system" << std::endl;
+	std::cout << "[MSCKF-UP]: " << msckf_compress_sys_time << " seconds compress system" << std::endl;
 	std::cout << "[MSCKF-UP]: " << msckf_update_state_time << " seconds update state (" << (int)res_big.rows() << " size)" << std::endl;
 	std::cout << "[MSCKF-UP]: " << msckf_total_time << " seconds total" << std::endl;
 
