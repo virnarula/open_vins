@@ -40,7 +40,7 @@ public:
 
 		_m_pose->put(new pose_type{
 			state->imu()->pos(),
-				Eigen::Quaterniond{quat(3), quat(0), quat(1), quat(2)},
+			Eigen::Quaternionf{quat(3), quat(0), quat(1), quat(2)},
 			state->imu()->Rot(),
 		});
 

@@ -45,6 +45,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-sign
 # Enable debug flags (use if you want to debug in gdb)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wuninitialized -Wmaybe-uninitialized")
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -pthread -lboost_date_time")
+
 # Include our header files
 include_directories(
         src
@@ -80,8 +82,8 @@ target_link_libraries(ov_msckf_lib ov_core_lib ${thirdparty_libraries})
 ##################################################
 # Make binary files!
 ##################################################
-add_executable(run_serial_msckf src/run_serial_msckf.cpp)
-target_link_libraries(run_serial_msckf ov_msckf_lib ov_core_lib ${thirdparty_libraries})
+#add_executable(run_serial_msckf src/run_serial_msckf.cpp)
+#target_link_libraries(run_serial_msckf ov_msckf_lib ov_core_lib ${thirdparty_libraries})
 
 add_library(slam2 SHARED src/slam2.cc)
 target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
