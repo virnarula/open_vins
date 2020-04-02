@@ -21,9 +21,8 @@ using namespace ov_msckf;
 class slam1 : public component {
 public:
 	/* Provide handles to slam1 */
-	slam1(std::unique_ptr<writer<pose_type>>&& pose, std::unique_ptr<writer<bool>>&& ready)
+	slam1(std::unique_ptr<writer<pose_type>>&& pose)
 		: _m_pose{std::move(pose)}
-		, _m_ready{std::move(ready)}
 		, _m_begin{std::chrono::system_clock::now()}
 	{ }
 
@@ -42,7 +41,6 @@ public:
 		if (open_vins_estimator.intialized()) {
 			if (isUninitialized) {
 				isUninitialized = false;
-				_m_ready->put(new bool{true});
 			}
 			_m_pose->put(new pose_type{
 				cam_frame->time,
@@ -67,7 +65,6 @@ public:
 
 private:
 	std::unique_ptr<writer<pose_type>> _m_pose;
-	std::unique_ptr<writer<bool>> _m_ready;
 	time_type _m_begin;
 	std::mutex _m_mutex;
 
@@ -86,11 +83,9 @@ extern "C" component* create_component(switchboard* sb) {
 	/* First, we declare intent to read/write topics. Switchboard
 	   returns handles to those topics. */
 	auto pose_ev = sb->publish<pose_type>("slow_pose");
-	auto slam_ready = sb->publish<bool>("slam_ready");
 	pose_ev->put(new pose_type{std::chrono::system_clock::now(), Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
-	slam_ready->put(new bool{false});
 
-	auto this_slam1 = new slam1{std::move(pose_ev), std::move(slam_ready)};
+	auto this_slam1 = new slam1{std::move(pose_ev)};
 	sb->schedule<cam_type>("cams", std::bind(&slam1::feed_cam, this_slam1, std::placeholders::_1));
 	sb->schedule<imu_type>("imu0", std::bind(&slam1::feed_imu, this_slam1, std::placeholders::_1));
 
