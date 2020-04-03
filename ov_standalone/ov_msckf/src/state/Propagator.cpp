@@ -202,9 +202,9 @@ std::vector<Propagator::IMUDATA> Propagator::select_imu_readings(const std::vect
     // If we did not reach the whole integration period (i.e., the last inertial measurement we have is smaller then the time we want to reach)
     // Then we should just "stretch" the last measurement to be the whole period
     if(imu_data.at(imu_data.size()-1).timestamp <= time1) {
-        std::cerr << "Propagator::select_imu_readings(): There are not enough measurements to propagate with " << (time1-imu_data.at(imu_data.size()-1).timestamp) << " sec missing" << std::endl;
-        std::cerr << "Propagator::select_imu_readings(): IMU-CAMERA time offset is likely messed up, check time offset value!!!" << std::endl;
-        std::cerr << __FILE__ << " on line " << __LINE__ << std::endl;
+        // std::cerr << "Propagator::select_imu_readings(): There are not enough measurements to propagate with " << (time1-imu_data.at(imu_data.size()-1).timestamp) << " sec missing" << std::endl;
+        // std::cerr << "Propagator::select_imu_readings(): IMU-CAMERA time offset is likely messed up, check time offset value!!!" << std::endl;
+        // std::cerr << __FILE__ << " on line " << __LINE__ << std::endl;
         return prop_data;
     }
 
