@@ -1,9 +1,5 @@
 #include <functional>
 
-#include "common/component.hh"
-#include "common/switchboard.hh"
-#include "common/data_format.hh"
-
 #include <opencv/cv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -14,17 +10,26 @@
 // #include "core/RosVisualizer.h"
 #include "state/State.h"
 
+#include "common/plugin.hh"
+#include "common/switchboard.hh"
+#include "common/data_format.hh"
+
 using namespace ILLIXR;
 
 using namespace ov_msckf;
 
-class slam1 : public component {
+class slam2 : public plugin {
 public:
-	/* Provide handles to slam1 */
-	slam1(std::unique_ptr<writer<pose_type>>&& pose)
-		: _m_pose{std::move(pose)}
+	/* Provide handles to slam2 */
+	slam2(phonebook* pb)
+		: sb{pb->lookup_impl<switchboard>()}
+		, _m_pose{sb->publish<pose_type>("slow_pose")}
 		, _m_begin{std::chrono::system_clock::now()}
-	{ }
+	{
+		_m_pose->put(new pose_type{std::chrono::system_clock::now(), Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+		sb->schedule<cam_type>("cams", std::bind(&slam2::feed_cam, this, std::placeholders::_1));
+		sb->schedule<imu_type>("imu0", std::bind(&slam2::feed_imu, this, std::placeholders::_1));
+	}
 
 	void feed_cam(const cam_type* cam_frame) {
 		const std::lock_guard<std::mutex> lock{_m_mutex};
@@ -61,15 +66,10 @@ public:
 		open_vins_estimator.feed_measurement_imu(cvtTime(imu_reading->time), (imu_reading->angular_v).cast<double>(), (imu_reading->linear_a).cast<double>());
 	}
 
-	virtual void _p_start() override {
-		/* All of my work is already scheduled synchronously. Nohting to do here. */
-	}
-
-	virtual void _p_stop() override { }
-
-	virtual ~slam1() override { }
+	virtual ~slam2() override { }
 
 private:
+	switchboard * const sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	time_type _m_begin;
 	std::mutex _m_mutex;
@@ -85,15 +85,4 @@ private:
 
 };
 
-extern "C" component* create_component(switchboard* sb) {
-	/* First, we declare intent to read/write topics. Switchboard
-	   returns handles to those topics. */
-	auto pose_ev = sb->publish<pose_type>("slow_pose");
-	pose_ev->put(new pose_type{std::chrono::system_clock::now(), Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
-
-	auto this_slam1 = new slam1{std::move(pose_ev)};
-	sb->schedule<cam_type>("cams", std::bind(&slam1::feed_cam, this_slam1, std::placeholders::_1));
-	sb->schedule<imu_type>("imu0", std::bind(&slam1::feed_imu, this_slam1, std::placeholders::_1));
-
-	return this_slam1;
-}
+PLUGIN_MAIN(slam2)
