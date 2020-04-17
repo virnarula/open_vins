@@ -23,7 +23,7 @@ public:
 	/* Provide handles to slam1 */
 	slam1(std::unique_ptr<writer<pose_type>>&& pose)
 		: _m_pose{std::move(pose)}
-		, _m_begin{std::chrono::system_clock::now()}
+		, _m_begin{std::chrono::system_clock::time_point(std::chrono::nanoseconds(1403715886544058112))}
 	{ }
 
 	void feed_cam(const cam_type* cam_frame) {
@@ -83,7 +83,7 @@ extern "C" component* create_component(switchboard* sb) {
 	/* First, we declare intent to read/write topics. Switchboard
 	   returns handles to those topics. */
 	auto pose_ev = sb->publish<pose_type>("slow_pose");
-	pose_ev->put(new pose_type{std::chrono::system_clock::now(), Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+	pose_ev->put(new pose_type{std::chrono::system_clock::time_point(std::chrono::nanoseconds(1403715886544058112)), Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
 
 	auto this_slam1 = new slam1{std::move(pose_ev)};
 	sb->schedule<cam_type>("cams", std::bind(&slam1::feed_cam, this_slam1, std::placeholders::_1));
