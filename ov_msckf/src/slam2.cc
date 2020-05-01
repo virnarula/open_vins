@@ -70,8 +70,8 @@ public:
 		Eigen::Vector4d quat = state->_imu->quat();
 		Eigen::Vector3d pose = state->_imu->pos();
 
-		Eigen::Vector3f swapped_pos = Eigen::Vector3f{pose(0), pose(1), pose(2)};
-		Eigen::Quaternionf swapped_rot = Eigen::Quaternionf{quat(3), quat(0), quat(1), quat(2)};
+		Eigen::Vector3f swapped_pos = Eigen::Vector3f{float(pose(0)), float(pose(1)), float(pose(2))};
+		Eigen::Quaternionf swapped_rot = Eigen::Quaternionf{float(quat(3)), float(quat(0)), float(quat(1)), float(quat(2))};
 
 		//std::cerr << "cam_frame->time: " << cam_frame->time.time_since_epoch().count() << std::endl;
 

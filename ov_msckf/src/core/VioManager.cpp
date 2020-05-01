@@ -28,26 +28,14 @@ using namespace ov_type;
 using namespace ov_msckf;
 
 
-VioManager::VioManager() {
 
+VioManager::VioManager(VioManagerOptions& params_) {
     // Nice startup message
     printf("=======================================\n");
     printf("OPENVINS ON-MANIFOLD EKF IS STARTING\n");
     printf("=======================================\n");
 
-    char* tempArgv = new char[1];
-    VioManagerOptions params = parse_command_line_arguments(1, &tempArgv);
-    constructorHelper(params);
-}
-
-
-VioManager::VioManager(VioManagerOptions& params_) {
-    constructorHelper(params_);
-}
-
-
-void VioManager::constructorHelper(VioManagerOptions& params_) {
-    this->params = params_;
+        this->params = params_;
     params.print_estimator();
     params.print_noise();
     params.print_state();
@@ -147,9 +135,6 @@ void VioManager::feed_measurement_imu(double timestamp, Eigen::Vector3d wm, Eige
     }
 
 }
-
-
-
 
 
 void VioManager::feed_measurement_monocular(double timestamp, cv::Mat& img0, size_t cam_id) {
