@@ -21,25 +21,32 @@
 #include "VioManager.h"
 #include "types/Landmark.h"
 
-
+#include "utils/parse_cmd.h"
 
 using namespace ov_core;
 using namespace ov_type;
 using namespace ov_msckf;
 
 
-
-
-
-VioManager::VioManager(VioManagerOptions& params_) {
-
+VioManager::VioManager() {
 
     // Nice startup message
     printf("=======================================\n");
     printf("OPENVINS ON-MANIFOLD EKF IS STARTING\n");
     printf("=======================================\n");
 
-    // Nice debug
+    char* tempArgv = new char[1];
+    VioManagerOptions params = parse_command_line_arguments(1, &tempArgv);
+    constructorHelper(params);
+}
+
+
+VioManager::VioManager(VioManagerOptions& params_) {
+    constructorHelper(params_);
+}
+
+
+void VioManager::constructorHelper(VioManagerOptions& params_) {
     this->params = params_;
     params.print_estimator();
     params.print_noise();
@@ -126,10 +133,7 @@ VioManager::VioManager(VioManagerOptions& params_) {
     // Make the updater!
     updaterMSCKF = new UpdaterMSCKF(params.msckf_options,params.featinit_options);
     updaterSLAM = new UpdaterSLAM(params.slam_options,params.aruco_options,params.featinit_options);
-
 }
-
-
 
 
 void VioManager::feed_measurement_imu(double timestamp, Eigen::Vector3d wm, Eigen::Vector3d am) {

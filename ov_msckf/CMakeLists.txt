@@ -125,11 +125,10 @@ else()
 	target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
 endif()
 
+#add_executable(test_sim_meas src/test_sim_meas.cpp)
+#target_link_libraries(test_sim_meas ov_msckf_lib ${thirdparty_libraries})
 
-add_executable(test_sim_meas src/test_sim_meas.cpp)
-target_link_libraries(test_sim_meas ov_msckf_lib ${thirdparty_libraries})
-
-add_executable(test_sim_repeat src/test_sim_repeat.cpp)
-target_link_libraries(test_sim_repeat ov_msckf_lib ${thirdparty_libraries})
+#add_executable(test_sim_repeat src/test_sim_repeat.cpp)
+#target_link_libraries(test_sim_repeat ov_msckf_lib ${thirdparty_libraries})
 
 

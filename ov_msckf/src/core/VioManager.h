@@ -61,12 +61,16 @@ namespace ov_msckf {
 
     public:
 
+        VioManager();
 
         /**
          * @brief Default constructor, will load all configuration variables
          * @param params_ Parameters loaded from either ROS or CMDLINE
          */
         VioManager(VioManagerOptions& params_);
+        
+
+        void constructorHelper(VioManagerOptions& params_);
 
 
         /**
