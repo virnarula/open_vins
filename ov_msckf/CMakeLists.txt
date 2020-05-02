@@ -82,9 +82,6 @@ target_link_libraries(ov_msckf_lib ${thirdparty_libraries})
 add_executable(run_serial_msckf src/run_serial_msckf.cpp)
 target_link_libraries(run_serial_msckf ov_msckf_lib ${thirdparty_libraries})
 
-add_library(slam2 SHARED src/slam2.cc)
-target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
-
 # add_executable(run_simulation src/run_simulation.cpp)
 # target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
 
