@@ -27,7 +27,8 @@ using namespace ov_core;
 using namespace ov_type;
 using namespace ov_msckf;
 
-
+FILE *biases_file;
+FILE *poses_file;
 
 VioManager::VioManager(VioManagerOptions& params_) {
     // Nice startup message
@@ -256,6 +257,9 @@ bool VioManager::try_to_initialize() {
         std::cout << "NOT ENOUGH POINTS -- Tracking failed" << std::endl;
         return false;
     }
+    
+    poses_file = fopen("poses.txt" , "w+");
+    biases_file = fopen("biases.txt" , "w+");
 
     // Make big vector (q,p,v,bg,ba), and update our state
     // Note: start from zero position, as this is what our covariance is based off of
@@ -571,10 +575,10 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     timelastupdate = timestamp;
 
     // Debug, print our current state
-    printf("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
+    fprintf(poses_file, "q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
             state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3),
             state->_imu->pos()(0),state->_imu->pos()(1),state->_imu->pos()(2),distance);
-    printf("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
+    fprintf(biases_file, "bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
              state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2),
              state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
 

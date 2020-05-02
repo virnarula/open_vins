@@ -73,7 +73,7 @@ VioManagerOptions create_params()
 	params.camera_extrinsics.insert({1, extrinsics_1});
 	params.camera_wh.insert({1, {752, 480}});
 
-	params.state_options.max_slam_features = 0;
+	// params.state_options.max_slam_features = 0;
 	params.state_options.num_cameras = 2;
 	params.init_window_time = 0.75;
 	params.init_imu_thresh = 1.5;
@@ -83,6 +83,20 @@ VioManagerOptions create_params()
 	params.num_pts = 150;
 	params.msckf_options.chi2_multipler = 1;
 	params.knn_ratio = .7;
+	params.state_options.imu_avg = true;
+	params.state_options.use_rk4_integration = true;
+	params.state_options.do_calib_camera_pose = true;
+	params.state_options.do_calib_camera_intrinsics = true;
+	params.state_options.do_calib_camera_timeoffset = true;
+	params.dt_slam_delay = 3.0;
+	params.state_options.max_slam_features = 75;
+	params.state_options.max_slam_in_update = 25;
+	params.state_options.max_msckf_in_update = 999;
+	params.use_aruco = false;
+
+	params.state_options.feat_rep_slam = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
+    params.state_options.feat_rep_aruco = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
+
 
 	return params;
 }
