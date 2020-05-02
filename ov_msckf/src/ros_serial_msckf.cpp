@@ -70,7 +70,7 @@ int main(int argc, char** argv)
     // Location of the ROS bag we want to read in
     std::string path_to_bag;
     //nhPrivate.param<std::string>("path_bag", path_to_bag, "/home/keck/catkin_ws/V1_01_easy.bag");
-    nh.param<std::string>("path_bag", path_to_bag, "/home/patrick/datasets/eth/V1_01_easy.bag");
+    nh.param<std::string>("path_bag", path_to_bag, "/home/jeffrey/illixr-prototype/V1_02_medium.bag");
     ROS_INFO("ros bag path is: %s", path_to_bag.c_str());
 
     // Load groundtruth if we have it
