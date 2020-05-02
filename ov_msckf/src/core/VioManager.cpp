@@ -253,6 +253,7 @@ bool VioManager::try_to_initialize() {
 
     // Return if it failed
     if (!success) {
+        std::cout << "NOT ENOUGH POINTS -- Tracking failed" << std::endl;
         return false;
     }
 

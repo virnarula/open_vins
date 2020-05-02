@@ -4,6 +4,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include <math.h>
 #include <eigen3/Eigen/Dense>
 
 #include "core/VioManager.h"
@@ -18,23 +19,69 @@ using namespace ILLIXR;
 
 using namespace ov_msckf;
 
-VioManagerOptions create_params() {
+VioManagerOptions create_params()
+{
 	VioManagerOptions params;
 
-	Eigen::Matrix<double, 8, 1> intrinsics;
-	intrinsics << 458.654, 457.296, 367.215, 248.375, -0.28340811, 0.07395907, 0.00019359, 1.76187114e-05;
+	// Camera #1
+	Eigen::Matrix<double, 8, 1> intrinsics_0;
+	intrinsics_0 << 458.654, 457.296, 367.215, 248.375, -0.28340811, 0.07395907, 0.00019359, 1.76187114e-05;
 
-	Eigen::Matrix<double, 7, 1> extrinsics;
-	extrinsics << 0, 0, 0, 1, 0, 0, 0;
+    Eigen::Matrix4d T_CtoI_0;
+	std::vector<double> matrix_TCtoI_0 = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
+											   0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
+											   -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
+											   0.0, 0.0, 0.0, 1.0};
 
-	for (int i = 0; i < 2; i++) {
-		params.camera_fisheye.insert({i, false});
-		params.camera_intrinsics.insert({i, intrinsics});
-		params.camera_extrinsics.insert({i, extrinsics});
-		params.camera_wh.insert({i, {752,480}});
-	}
+	T_CtoI_0 << matrix_TCtoI_0.at(0), matrix_TCtoI_0.at(1), matrix_TCtoI_0.at(2), matrix_TCtoI_0.at(3),
+		matrix_TCtoI_0.at(4), matrix_TCtoI_0.at(5), matrix_TCtoI_0.at(6), matrix_TCtoI_0.at(7),
+		matrix_TCtoI_0.at(8), matrix_TCtoI_0.at(9), matrix_TCtoI_0.at(10), matrix_TCtoI_0.at(11),
+		matrix_TCtoI_0.at(12), matrix_TCtoI_0.at(13), matrix_TCtoI_0.at(14), matrix_TCtoI_0.at(15);
 
+	// Load these into our state
+	Eigen::Matrix<double, 7, 1> extrinsics_0;
+	extrinsics_0.block(0, 0, 4, 1) = rot_2_quat(T_CtoI_0.block(0, 0, 3, 3).transpose());
+	extrinsics_0.block(4, 0, 3, 1) = -T_CtoI_0.block(0, 0, 3, 3).transpose() * T_CtoI_0.block(0, 3, 3, 1);
+
+	params.camera_fisheye.insert({0, false});
+	params.camera_intrinsics.insert({0, intrinsics_0});
+	params.camera_extrinsics.insert({0, extrinsics_0});
+	params.camera_wh.insert({0, {752, 480}});
+
+	// Camera #2
+	Eigen::Matrix<double, 8, 1> intrinsics_1;
+	intrinsics_1 << 457.587, 456.134, 379.999, 255.238, -0.28368365, 0.07451284, -0.00010473, -3.55590700e-05;
+
+    Eigen::Matrix4d T_CtoI_1;
+	std::vector<double> matrix_TCtoI_1 = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
+											   0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
+											   -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
+											   0.0, 0.0, 0.0, 1.0};
+
+	T_CtoI_1 << matrix_TCtoI_1.at(0), matrix_TCtoI_1.at(1), matrix_TCtoI_1.at(2), matrix_TCtoI_1.at(3),
+		matrix_TCtoI_1.at(4), matrix_TCtoI_1.at(5), matrix_TCtoI_1.at(6), matrix_TCtoI_1.at(7),
+		matrix_TCtoI_1.at(8), matrix_TCtoI_1.at(9), matrix_TCtoI_1.at(10), matrix_TCtoI_1.at(11),
+		matrix_TCtoI_1.at(12), matrix_TCtoI_1.at(13), matrix_TCtoI_1.at(14), matrix_TCtoI_1.at(15);
+
+	// Load these into our state
+	Eigen::Matrix<double, 7, 1> extrinsics_1;
+	extrinsics_1.block(0, 0, 4, 1) = rot_2_quat(T_CtoI_1.block(0, 0, 3, 3).transpose());
+	extrinsics_1.block(4, 0, 3, 1) = -T_CtoI_1.block(0, 0, 3, 3).transpose() * T_CtoI_1.block(0, 3, 3, 1);
+
+	params.camera_fisheye.insert({1, false});
+	params.camera_intrinsics.insert({1, intrinsics_1});
+	params.camera_extrinsics.insert({1, extrinsics_1});
+	params.camera_wh.insert({1, {752, 480}});
+
+	params.state_options.max_slam_features = 0;
 	params.state_options.num_cameras = 2;
+	params.init_window_time = 0.5;
+	params.init_imu_thresh = 1.0;
+	params.fast_threshold = 10;
+	params.grid_x = 5;
+	params.grid_y = 3;
+	params.num_pts = 400;
+	params.msckf_options.chi2_multipler = 1;
 
 	return params;
 }
@@ -44,8 +91,7 @@ class slam2 : public plugin
 public:
 	/* Provide handles to slam2 */
 	slam2(phonebook *pb)
-		: sb{pb->lookup_impl<switchboard>()}
-		, open_vins_estimator{manager_params}
+		: sb{pb->lookup_impl<switchboard>()}, open_vins_estimator{manager_params}
 	{
 
 		_m_pose = sb->publish<pose_type>("slow_pose");
@@ -72,6 +118,14 @@ public:
 
 		Eigen::Vector3f swapped_pos = Eigen::Vector3f{float(pose(0)), float(pose(1)), float(pose(2))};
 		Eigen::Quaternionf swapped_rot = Eigen::Quaternionf{float(quat(3)), float(quat(0)), float(quat(1)), float(quat(2))};
+
+       	assert(isfinite(swapped_rot.w()));
+        assert(isfinite(swapped_rot.x()));
+        assert(isfinite(swapped_rot.y()));
+        assert(isfinite(swapped_rot.z()));
+        assert(isfinite(swapped_pos[0]));
+        assert(isfinite(swapped_pos[1]));
+        assert(isfinite(swapped_pos[2]));
 
 		//std::cerr << "cam_frame->time: " << cam_frame->time.time_since_epoch().count() << std::endl;
 
