@@ -83,15 +83,23 @@ VioManagerOptions create_params()
 	params.num_pts = 150;
 	params.msckf_options.chi2_multipler = 1;
 	params.knn_ratio = .7;
+
 	params.state_options.imu_avg = true;
+	params.state_options.do_fej = true;
 	params.state_options.use_rk4_integration = true;
+	params.use_stereo = true;
 	params.state_options.do_calib_camera_pose = true;
 	params.state_options.do_calib_camera_intrinsics = true;
 	params.state_options.do_calib_camera_timeoffset = true;
+
 	params.dt_slam_delay = 3.0;
-	params.state_options.max_slam_features = 75;
+	params.state_options.max_slam_features = 50;
 	params.state_options.max_slam_in_update = 25;
 	params.state_options.max_msckf_in_update = 999;
+
+	params.slam_options.chi2_multipler = 1;
+	params.slam_options.sigma_pix = 1;
+
 	params.use_aruco = false;
 
 	params.state_options.feat_rep_slam = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
@@ -101,8 +109,7 @@ VioManagerOptions create_params()
 	return params;
 }
 
-class slam2 : public plugin
-{
+class slam2 : public plugin {
 public:
 	/* Provide handles to slam2 */
 	slam2(phonebook *pb)
@@ -111,23 +118,43 @@ public:
 
 		_m_pose = sb->publish<pose_type>("slow_pose");
 		_m_begin = std::chrono::system_clock::now();
+		imu_cam_buffer = NULL;
 
-		_m_pose->put(new pose_type{std::chrono::system_clock::now(), Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
-		sb->schedule<cam_type>("cams", std::bind(&slam2::feed_cam, this, std::placeholders::_1));
-		sb->schedule<imu_type>("imu0", std::bind(&slam2::feed_imu, this, std::placeholders::_1));
+		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+		sb->schedule<imu_cam_type>("imu_cam", std::bind(&slam2::feed_imu_cam, this, std::placeholders::_1));
 	}
 
-	void feed_cam(const cam_type *cam_frame)
-	{
-		const std::lock_guard<std::mutex> lock{_m_mutex};
-		// okvis_estimator.addImage(cvtTime(cam_frame->time), cam_frame->id, *cam_frame->img);
-		assert(cam_frame->img0);
-		assert(cam_frame->img1);
-		cv::Mat img0{*cam_frame->img0};
-		cv::Mat img1{*cam_frame->img1};
-		open_vins_estimator.feed_measurement_stereo(cvtTime(cam_frame->time), img0, img1, 0, 1);
-		State *state = open_vins_estimator.get_state();
+	void feed_imu_cam(const imu_cam_type *datum) {
+		if (datum == NULL) {
+			assert(temp_doub == 0);
+			return;
+		}
 
+		assert(datum->temp_time > temp_doub);
+		temp_doub = datum->temp_time;
+
+		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
+		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
+		open_vins_estimator.feed_measurement_imu(datum->temp_time, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
+		// datum->time used to be 2020 + .5ms
+		std::cout << std::fixed << "Time of IMU/CAM: " << datum->temp_time * 1e9 << " Lin a: " << 
+			datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
+			datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
+
+		// If there is not cam data this func call, break early
+		if (!datum->img0.has_value() && !datum->img1.has_value()) {
+			return;
+		} else if (imu_cam_buffer == NULL) {
+			imu_cam_buffer = datum;
+			return;
+		}
+		
+		cv::Mat img0{*imu_cam_buffer->img0.value()};
+		cv::Mat img1{*imu_cam_buffer->img1.value()};
+		open_vins_estimator.feed_measurement_stereo(imu_cam_buffer->temp_time, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
+
+		// Get the pose returned from SLAM
+		State *state = open_vins_estimator.get_state();
 		Eigen::Vector4d quat = state->_imu->quat();
 		Eigen::Vector3d pose = state->_imu->pos();
 
@@ -142,25 +169,19 @@ public:
         assert(isfinite(swapped_pos[1]));
         assert(isfinite(swapped_pos[2]));
 
-		//std::cerr << "cam_frame->time: " << cam_frame->time.time_since_epoch().count() << std::endl;
-		if (open_vins_estimator.initialized())
-		{
-			if (isUninitialized)
-			{
+		if (open_vins_estimator.initialized()) {
+			if (isUninitialized) {
 				isUninitialized = false;
 			}
+
 			_m_pose->put(new pose_type{
-				cam_frame->time,
+				imu_cam_buffer->time,
 				swapped_pos,
 				swapped_rot,
 			});
 		}
-	}
 
-	void feed_imu(const imu_type *imu_reading)
-	{
-		const std::lock_guard<std::mutex> lock{_m_mutex};
-		open_vins_estimator.feed_measurement_imu(cvtTime(imu_reading->time), (imu_reading->angular_v).cast<double>(), (imu_reading->linear_a).cast<double>());
+		imu_cam_buffer = datum;
 	}
 
 	virtual ~slam2() override {}
@@ -174,10 +195,14 @@ private:
 	VioManagerOptions manager_params = create_params();
 	VioManager open_vins_estimator;
 
+	const imu_cam_type *imu_cam_buffer;
+
+	double temp_doub = 0.0;
+
 	bool isUninitialized = true;
 
-	double cvtTime(time_type t)
-	{
+	// This is doing 2020 - .5 ms - 2020
+	double cvtTime(time_type t) {
 		auto diff = t - _m_begin;
 		return static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(diff).count()) / 1000000000.0;
 	}
