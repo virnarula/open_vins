@@ -120,8 +120,13 @@ public:
 		imu_cam_buffer = NULL;
 
 		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
-		sb->schedule<imu_cam_type>("imu_cam", std::bind(&slam2::feed_imu_cam, this, std::placeholders::_1));
 	}
+
+	virtual void start() override {
+  	sb->schedule<imu_cam_type>("imu_cam", [&](const imu_cam_type *datum) {
+        std::cout << "I'm here, even if the 'this' isn't. I'm in pose_predict component" << std::endl;
+        this->feed_imu_cam(datum);
+    });	}
 
 	void feed_imu_cam(const imu_cam_type *datum) {
 		if (datum == NULL) {
