@@ -8,7 +8,6 @@
 #include <eigen3/Eigen/Dense>
 
 #include "core/VioManager.h"
-// #include "core/RosVisualizer.h"
 #include "state/State.h"
 
 #include "common/plugin.hh"
@@ -130,14 +129,15 @@ public:
 			return;
 		}
 
-		assert(datum->temp_time > temp_doub);
-		temp_doub = datum->temp_time;
+		double timestamp_in_seconds = (double(datum->temp_time) / 1000000000.0);
+		assert(timestamp_in_seconds > temp_doub);
+		temp_doub = timestamp_in_seconds;
 
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
-		open_vins_estimator.feed_measurement_imu(datum->temp_time, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
+		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
 		// datum->time used to be 2020 + .5ms
-		std::cout << std::fixed << "Time of IMU/CAM: " << datum->temp_time * 1e9 << " Lin a: " << 
+		std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
 			datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
 			datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
 
@@ -151,7 +151,8 @@ public:
 		
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
-		open_vins_estimator.feed_measurement_stereo(imu_cam_buffer->temp_time, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
+		double buffer_timestamp_seconds = (double(imu_cam_buffer->temp_time) / 1000000000.0);
+		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
 
 		// Get the pose returned from SLAM
 		State *state = open_vins_estimator.get_state();
