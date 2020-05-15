@@ -1,6 +1,7 @@
 cmake-build-debug
-build
+_build
 Build
 *.*~
 .idea
 doxgen_generated
+*.so

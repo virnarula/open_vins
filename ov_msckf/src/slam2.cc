@@ -10,9 +10,9 @@
 #include "core/VioManager.h"
 #include "state/State.h"
 
-#include "common/plugin.hh"
-#include "common/switchboard.hh"
-#include "common/data_format.hh"
+#include "common/plugin.hpp"
+#include "common/switchboard.hpp"
+#include "common/data_format.hpp"
 
 using namespace ILLIXR;
 

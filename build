@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -o noclobber -o errexit -o nounset -o xtrace
+
+# cd to the root of the project
+cd "$(dirname "${0}")"
+
+mkdir -p _build/
+cd _build/
+cmake ..
+nproc="`python3 -c 'import multiprocessing; print( max(multiprocessing.cpu_count() - 1, 1))'`"
+make "-j${nproc}"
+cd ..
+cp _build/ov_msckf/libslam2.so plugin.dbg.so
