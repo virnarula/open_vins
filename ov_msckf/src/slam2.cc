@@ -135,6 +135,7 @@ public:
 		}
 
 		double timestamp_in_seconds = (double(datum->temp_time) / 1000000000.0);
+		std::cout << datum->temp_time << " " << timestamp_in_seconds << " " << temp_doub << std::endl;
 		assert(timestamp_in_seconds > temp_doub);
 		temp_doub = timestamp_in_seconds;
 
