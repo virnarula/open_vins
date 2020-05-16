@@ -14,4 +14,4 @@ plugin.opt.so:
 
 .PHONY: clean
 clean:
-	touch build && rm -rf build
+	touch build && rm -rf build *.so
