@@ -2,8 +2,8 @@ nproc=$(shell python3 -c 'import multiprocessing; print( max(multiprocessing.cpu
 
 .PHONY: plugin.dbg.so
 plugin.dbg.so:
-	mkdir -p _build/ && \
-	cd _build/ && \
+	mkdir -p build/ && \
+	cd build/ && \
 	cmake .. && \
 	make "-j$(nproc)" && \
 	cd .. && \
