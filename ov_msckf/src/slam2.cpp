@@ -13,6 +13,7 @@
 #include "common/plugin.hpp"
 #include "common/switchboard.hpp"
 #include "common/data_format.hpp"
+#include "common/pose_correction.hpp"
 
 using namespace ILLIXR;
 
@@ -112,7 +113,9 @@ class slam2 : public plugin {
 public:
 	/* Provide handles to slam2 */
 	slam2(phonebook *pb)
-		: sb{pb->lookup_impl<switchboard>()}, open_vins_estimator{manager_params}
+		: sb{pb->lookup_impl<switchboard>()}
+		, pc{pb->lookup_impl<pose_correction>()}
+		, open_vins_estimator{manager_params}
 	{
 
 		_m_pose = sb->publish<pose_type>("slow_pose");
@@ -124,7 +127,6 @@ public:
 
 	virtual void start() override {
   	sb->schedule<imu_cam_type>("imu_cam", [&](const imu_cam_type *datum) {
-        std::cerr << "I'm here, even if the 'this' isn't. I'm in pose_predict component" << std::endl;
         this->feed_imu_cam(datum);
     });	}
 
@@ -181,11 +183,12 @@ public:
 				isUninitialized = false;
 			}
 
-			_m_pose->put(new pose_type{
+			pose_type* new_pose = new pose_type{
 				imu_cam_buffer->time,
 				swapped_pos,
 				swapped_rot,
-			});
+			};
+			_m_pose->put(pc->correct_pose(new_pose));
 		}
 
 		// I know, a priori, nobody other plugins subscribe to this topic
@@ -201,7 +204,8 @@ public:
 	virtual ~slam2() override {}
 
 private:
-	switchboard *const sb;
+	switchboard* const sb;
+	pose_correction* const pc;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	time_type _m_begin;
 	std::mutex _m_mutex;
@@ -209,7 +213,7 @@ private:
 	VioManagerOptions manager_params = create_params();
 	VioManager open_vins_estimator;
 
-	const imu_cam_type *imu_cam_buffer;
+	const imu_cam_type* imu_cam_buffer;
 
 	double temp_doub = 0.0;
 
