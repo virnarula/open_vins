@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8.8)
 
+project(open_vins)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
