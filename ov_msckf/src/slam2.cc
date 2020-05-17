@@ -188,6 +188,13 @@ public:
 			});
 		}
 
+		// I know, a priori, nobody other plugins subscribe to this topic
+		// Therefore, I can const the cast away, and delete stuff
+		// This fixes a memory leak.
+		// -- Sam at time t1
+		// Turns out, this is no longer correct. debbugview uses it
+		// const_cast<imu_cam_type*>(imu_cam_buffer)->img0.reset();
+		// const_cast<imu_cam_type*>(imu_cam_buffer)->img1.reset();
 		imu_cam_buffer = datum;
 	}
 
