@@ -9,7 +9,7 @@ plugin.dbg.so:
 	cd .. && \
 	touch plugin.dbg.so && \
 	rm    plugin.dbg.so && \
-	ln -s _build/ov_msckf/libslam2.so plugin.dbg.so && \
+	ln -s build/ov_msckf/libslam2.so plugin.dbg.so && \
 	true
 
 .PHONY: plugin.opt.so
