@@ -16,7 +16,6 @@
 #include "common/pose_correction.hpp"
 
 using namespace ILLIXR;
-
 using namespace ov_msckf;
 
 VioManagerOptions create_params()
@@ -117,7 +116,6 @@ public:
 		, pc{pb->lookup_impl<pose_correction>()}
 		, open_vins_estimator{manager_params}
 	{
-
 		_m_pose = sb->publish<pose_type>("slow_pose");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
@@ -125,25 +123,30 @@ public:
 		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
 	}
 
+
 	virtual void start() override {
   	sb->schedule<imu_cam_type>("imu_cam", [&](const imu_cam_type *datum) {
         this->feed_imu_cam(datum);
     });	}
 
+
 	void feed_imu_cam(const imu_cam_type *datum) {
+		// Ensures that slam doesnt start before valid IMU readings come in
 		if (datum == NULL) {
-			assert(temp_doub == 0);
+			assert(previous_timestamp == 0);
 			return;
 		}
 
-		double timestamp_in_seconds = (double(datum->temp_time) / 1000000000.0);
-		assert(timestamp_in_seconds > temp_doub);
-		temp_doub = timestamp_in_seconds;
+		// This ensures that every data point is coming in chronological order If youre failing this assert, 
+		// make sure that your data folder matches the name in offline_imu_cam/plugin.cc
+		double timestamp_in_seconds = (double(datum->dataset_time) / NANO_SEC);
+		assert(timestamp_in_seconds > previous_timestamp);
+		previous_timestamp = timestamp_in_seconds;
 
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
-		// datum->time used to be 2020 + .5ms
+
 		std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
 			datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
 			datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
@@ -158,7 +161,7 @@ public:
 		
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
-		double buffer_timestamp_seconds = (double(imu_cam_buffer->temp_time) / 1000000000.0);
+		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
 		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
 
 		// Get the pose returned from SLAM
@@ -200,29 +203,22 @@ public:
 		imu_cam_buffer = datum;
 	}
 
+
 	virtual ~slam2() override {}
+
 
 private:
 	switchboard* const sb;
 	pose_correction* const pc;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	time_type _m_begin;
-	std::mutex _m_mutex;
 
 	VioManagerOptions manager_params = create_params();
 	VioManager open_vins_estimator;
 
 	const imu_cam_type* imu_cam_buffer;
-
-	double temp_doub = 0.0;
-
+	double previous_timestamp = 0.0;
 	bool isUninitialized = true;
-
-	// This is doing 2020 - .5 ms - 2020
-	double cvtTime(time_type t) {
-		auto diff = t - _m_begin;
-		return static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(diff).count()) / 1000000000.0;
-	}
 };
 
 PLUGIN_MAIN(slam2)
