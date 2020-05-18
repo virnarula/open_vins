@@ -8,4 +8,3 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(ov_core)
 # add_subdirectory(ov_eval)
 add_subdirectory(ov_msckf)
-
