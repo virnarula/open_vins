@@ -13,7 +13,6 @@
 #include "common/plugin.hpp"
 #include "common/switchboard.hpp"
 #include "common/data_format.hpp"
-#include "common/pose_correction.hpp"
 
 using namespace ILLIXR;
 using namespace ov_msckf;
@@ -113,7 +112,6 @@ public:
 	/* Provide handles to slam2 */
 	slam2(phonebook *pb)
 		: sb{pb->lookup_impl<switchboard>()}
-		, pc{pb->lookup_impl<pose_correction>()}
 		, open_vins_estimator{manager_params}
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
@@ -185,12 +183,11 @@ public:
 				isUninitialized = false;
 			}
 
-			pose_type* new_pose = new pose_type{
+			_m_pose->put(new pose_type{
 				imu_cam_buffer->time,
 				swapped_pos,
 				swapped_rot,
-			};
-			_m_pose->put(pc->correct_pose(new_pose));
+			});
 		}
 
 		// I know, a priori, nobody other plugins subscribe to this topic
@@ -209,7 +206,6 @@ public:
 
 private:
 	switchboard* const sb;
-	pose_correction* const pc;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	time_type _m_begin;
 
