@@ -112,55 +112,67 @@ public:
 	/* Provide handles to slam2 */
 	slam2(phonebook *pb)
 		: sb{pb->lookup_impl<switchboard>()}
+		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
+		, _m_begin{std::chrono::system_clock::now()}
 		, open_vins_estimator{manager_params}
 	{
-		_m_pose = sb->publish<pose_type>("slow_pose");
-		_m_begin = std::chrono::system_clock::now();
-		imu_cam_buffer = NULL;
-
-		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+		_m_pose.put(new (_m_pose.allocate()) pose_type{
+			std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}
+		});
 	}
 
 
 	virtual void start() override {
-  	sb->schedule<imu_cam_type>("imu_cam", [&](const imu_cam_type *datum) {
-        this->feed_imu_cam(datum);
-    });	}
+		sb->schedule<imu_cam_type>("imu_cam", std::bind(&slam2::feed_imu_cam, this, std::placeholders::_1));
+	}
 
 
-	void feed_imu_cam(const imu_cam_type *datum) {
+	void feed_imu_cam(ptr<const imu_cam_type> datum) {
 		// Ensures that slam doesnt start before valid IMU readings come in
-		if (datum == NULL) {
-			assert(previous_timestamp == 0);
+		if (datum == nullptr) {
+			// assert buffer uninitialized
+			assert(!last_img_datum.img0);
+			// and no previous data
+			assert(previous_dataset_time == 0);
 			return;
 		}
 
-		// This ensures that every data point is coming in chronological order If youre failing this assert, 
-		// make sure that your data folder matches the name in offline_imu_cam/plugin.cc
-		double timestamp_in_seconds = (double(datum->dataset_time) / NANO_SEC);
-		assert(timestamp_in_seconds > previous_timestamp);
-		previous_timestamp = timestamp_in_seconds;
+		// This ensures that every data point is coming in chronological order
+		assert(previous_dataset_time < datum->dataset_time);
+		       previous_dataset_time = datum->dataset_time;
 
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
-		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
-		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
-
-		std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
-			datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
-			datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
+		assert(false
+			   // either both have value
+			   || ( datum->img0 &&  datum->img1)
+			   // or neither do
+			   || (!datum->img0 && !datum->img1)
+		);
+		
+		open_vins_estimator.feed_measurement_imu(double(datum->dataset_time) / NANO_SEC,
+												 (datum->angular_v).cast<double>(),
+												 (datum->linear_a ).cast<double>());
 
 		// If there is not cam data this func call, break early
-		if (!datum->img0.has_value() && !datum->img1.has_value()) {
+		if (!datum->img0) {
+			assert(!datum->img1);
 			return;
-		} else if (imu_cam_buffer == NULL) {
-			imu_cam_buffer = datum;
+		} else if (!last_img_datum.img0) {
+			assert(!last_img_datum.img1);
+			// special case on first time we have images
+			// last_img_datum the images and move on
+			last_img_datum = *datum;
 			return;
 		}
-		
-		cv::Mat img0{*imu_cam_buffer->img0.value()};
-		cv::Mat img1{*imu_cam_buffer->img1.value()};
-		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
-		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
+		assert(datum ->img1);
+		assert(last_img_datum.img1);
+
+		// VioManager::feed_measurement_stereo is a destructive read.
+		// Other readers may still need this data.
+		// so make a copy here.
+		cv::Mat img0 {*last_img_datum.img0};
+		cv::Mat img1 {*last_img_datum.img1};
+		open_vins_estimator.feed_measurement_stereo(double(last_img_datum.dataset_time) / NANO_SEC, img0, img1, 0, 1);
 
 		// Get the pose returned from SLAM
 		State *state = open_vins_estimator.get_state();
@@ -183,38 +195,27 @@ public:
 				isUninitialized = false;
 			}
 
-			_m_pose->put(new pose_type{
-				imu_cam_buffer->time,
+			_m_pose.put(new (_m_pose.allocate()) pose_type{
+				last_img_datum.time,
 				swapped_pos,
 				swapped_rot,
 			});
 		}
 
-		// I know, a priori, nobody other plugins subscribe to this topic
-		// Therefore, I can const the cast away, and delete stuff
-		// This fixes a memory leak.
-		// -- Sam at time t1
-		// Turns out, this is no longer correct. debbugview uses it
-		// const_cast<imu_cam_type*>(imu_cam_buffer)->img0.reset();
-		// const_cast<imu_cam_type*>(imu_cam_buffer)->img1.reset();
-		imu_cam_buffer = datum;
+		last_img_datum = *datum;
 	}
-
-
-	virtual ~slam2() override {}
-
 
 private:
 	switchboard* const sb;
-	std::unique_ptr<writer<pose_type>> _m_pose;
+	switchboard::writer<pose_type> _m_pose;
 	time_type _m_begin;
 
-	VioManagerOptions manager_params = create_params();
+	VioManagerOptions manager_params {create_params()};
 	VioManager open_vins_estimator;
 
-	const imu_cam_type* imu_cam_buffer;
-	double previous_timestamp = 0.0;
-	bool isUninitialized = true;
+	ullong previous_dataset_time {0};
+	imu_cam_type last_img_datum;
+	bool isUninitialized {true};
 };
 
 PLUGIN_MAIN(slam2)
