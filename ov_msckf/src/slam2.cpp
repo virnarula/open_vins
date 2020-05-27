@@ -115,11 +115,7 @@ public:
 		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
 		, _m_begin{std::chrono::system_clock::now()}
 		, open_vins_estimator{manager_params}
-	{
-		_m_pose.put(new (_m_pose.allocate()) pose_type{
-			std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}
-		});
-	}
+	{ }
 
 
 	virtual void start() override {
@@ -128,6 +124,7 @@ public:
 
 
 	void feed_imu_cam(ptr<const imu_cam_type> datum) {
+		std::cerr << "slam2::feed_imu_cam for " << datum.get() << std::endl;
 		// Ensures that slam doesnt start before valid IMU readings come in
 		if (datum == nullptr) {
 			// assert buffer uninitialized
@@ -138,7 +135,7 @@ public:
 		}
 
 		// This ensures that every data point is coming in chronological order
-		assert(previous_dataset_time < datum->dataset_time);
+		assert(previous_dataset_time < datum->dataset_time || previous_dataset_time == 0);
 		       previous_dataset_time = datum->dataset_time;
 
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
