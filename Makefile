@@ -17,4 +17,11 @@ plugin.opt.so:
 
 .PHONY: clean
 clean:
-	touch build && rm -rf build *.so
+	touch tmp.so && rm -f *.so build/ov_msckf/*.so
+
+.PHONY: deepclean
+deepclean: clean
+	rm -rf build *.so
+
+.PHONY: tests
+tests:

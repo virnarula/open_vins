@@ -124,7 +124,7 @@ public:
 
 
 	void feed_imu_cam(ptr<const imu_cam_type> datum) {
-		std::cerr << "slam2::feed_imu_cam for " << datum.get() << std::endl;
+		// std::cerr << "slam2::feed_imu_cam for " << datum.get() << std::endl;
 		// Ensures that slam doesnt start before valid IMU readings come in
 		if (datum == nullptr) {
 			// assert buffer uninitialized
