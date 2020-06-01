@@ -110,7 +110,7 @@ VioManagerOptions create_params()
 class slam2 : public plugin {
 public:
 	/* Provide handles to slam2 */
-	slam2(phonebook *pb)
+	slam2(const phonebook *pb)
 		: sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
 	{
@@ -205,7 +205,7 @@ public:
 
 
 private:
-	switchboard* const sb;
+	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	time_type _m_begin;
 
