@@ -110,7 +110,7 @@ VioManagerOptions create_params()
 class slam2 : public plugin {
 public:
 	/* Provide handles to slam2 */
-	slam2(phonebook *pb)
+	slam2(const phonebook *pb)
 		: sb{pb->lookup_impl<switchboard>()}
 		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
 		, _m_begin{std::chrono::system_clock::now()}
@@ -203,7 +203,7 @@ public:
 	}
 
 private:
-	switchboard* const sb;
+	const std::shared_ptr<switchboard> sb;
 	switchboard::writer<pose_type> _m_pose;
 	time_type _m_begin;
 
