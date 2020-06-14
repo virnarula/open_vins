@@ -124,9 +124,10 @@ public:
 
 
 	virtual void start() override {
-  	sb->schedule<imu_cam_type>("imu_cam", [&](const imu_cam_type *datum) {
-        this->feed_imu_cam(datum);
-    });	}
+		sb->schedule<imu_cam_type>(get_name(), "imu_cam", [&](const imu_cam_type *datum) {
+			this->feed_imu_cam(datum);
+		});
+	}
 
 
 	void feed_imu_cam(const imu_cam_type *datum) {
