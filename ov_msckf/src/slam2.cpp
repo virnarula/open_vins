@@ -207,7 +207,7 @@ public:
 
 
 private:
-	switchboard* const sb;
+	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	time_type _m_begin;
 
