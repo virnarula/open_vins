@@ -110,8 +110,9 @@ VioManagerOptions create_params()
 class slam2 : public plugin {
 public:
 	/* Provide handles to slam2 */
-	slam2(phonebook *pb)
-		: sb{pb->lookup_impl<switchboard>()}
+	slam2(std::string name_, phonebook* pb_)
+		: plugin{name_, pb_}
+		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
@@ -145,9 +146,9 @@ public:
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
 
-		std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
-			datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
-			datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
+		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
+		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
+		// 	datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
 
 		// If there is not cam data this func call, break early
 		if (!datum->img0.has_value() && !datum->img1.has_value()) {
