@@ -92,6 +92,8 @@ namespace ov_core {
             int ct_rows = std::floor(img.rows/size_y);
             std::vector<std::vector<cv::KeyPoint>> collection(ct_cols*ct_rows);
             parallel_for_(cv::Range(0, ct_cols*ct_rows), [&](const cv::Range& range) {
+				PRINT_CPU_TIME_FOR_THIS_BLOCK("open_vins");
+
                 for (int r = range.start; r < range.end; r++) {
 
                     // Calculate what cell xy value we are in
