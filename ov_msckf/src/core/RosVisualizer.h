@@ -31,6 +31,7 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/Float64.h>
 #include <nav_msgs/Path.h>
+#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <tf/transform_broadcaster.h>
@@ -75,6 +76,13 @@ namespace ov_msckf {
         void visualize();
 
         /**
+         * @brief Will publish our odometry message for the current timestep.
+         * This will take the current state estimate and get the propagated pose to the desired time.
+         * This can be used to get pose estimates on systems which require high frequency pose estimates.
+         */
+        void visualize_odometry(double timestamp);
+
+        /**
          * @brief After the run has ended, print results
          */
         void visualize_final();
@@ -108,6 +116,7 @@ namespace ov_msckf {
 
         // Our publishers
         ros::Publisher pub_poseimu;
+        ros::Publisher pub_odomimu;
         ros::Publisher pub_pathimu;
         ros::Publisher pub_points_msckf;
         ros::Publisher pub_points_slam;
@@ -128,6 +137,10 @@ namespace ov_msckf {
         double summed_nees_ori = 0.0;
         double summed_nees_pos = 0.0;
         size_t summed_number = 0;
+
+        // Start and end timestamps
+        bool start_time_set = false;
+        boost::posix_time::ptime rT1, rT2;
 
         // Our groundtruth states
         std::map<double, Eigen::Matrix<double,17,1>> gt_states;

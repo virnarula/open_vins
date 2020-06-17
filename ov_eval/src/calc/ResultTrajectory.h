@@ -27,7 +27,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <ros/ros.h>
 #include <Eigen/Eigen>
 #include <Eigen/StdVector>
 
@@ -35,6 +34,7 @@
 #include "utils/Statistics.h"
 #include "utils/Math.h"
 #include "utils/Loader.h"
+#include "utils/Colors.h"
 
 
 namespace ov_eval {
@@ -82,6 +82,20 @@ namespace ov_eval {
          */
         void calculate_ate(Statistics &error_ori, Statistics &error_pos);
 
+        /**
+         * @brief Computes the Absolute Trajectory Error (ATE) for this trajectory in the 2d x-y plane.
+         *
+         * This will first do our alignment of the two trajectories.
+         * We just grab the yaw component of the orientation and the xy plane error.
+         * Then at each point the error will be calculated and normed as follows:
+         * \f{align*}{
+         * e_{ATE} &= \sqrt{ \frac{1}{K} \sum_{k=1}^{K} ||\mathbf{x}_{k,i} \boxminus \hat{\mathbf{x}}^+_{k,i}||^2_{2} }
+         * \f}
+         *
+         * @param error_ori Error values for the orientation (yaw error)
+         * @param error_pos Error values for the position (xy error)
+         */
+        void calculate_ate_2d(Statistics &error_ori, Statistics &error_pos);
 
         /**
          * @brief Computes the Relative Pose Error (RPE) for this trajectory
@@ -149,15 +163,6 @@ namespace ov_eval {
         // Aligned trajectories
         std::vector<Eigen::Matrix<double,7,1>> est_poses_aignedtoGT;
         std::vector<Eigen::Matrix<double,7,1>> gt_poses_aignedtoEST;
-
-
-        /**
-         * @brief Will intersect our loaded data so that we have common timestamps.
-         * @param offset Time offset to append to our estimate
-         * @param max_difference Biggest allowed difference between matched timesteps
-         */
-        void perform_association(double offset, double max_difference);
-
 
         /**
          * @brief Gets the indices at the end of subtractories of a given length when starting at each index.

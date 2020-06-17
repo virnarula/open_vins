@@ -37,7 +37,7 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
     }
     dt = sumdt/(traj_points.size()-1);
     dt = (dt < 0.05)? 0.05 : dt;
-    ROS_INFO("[B-SPLINE]: control point dt = %.3f (original dt of %.3f)",dt,sumdt/(traj_points.size()-1));
+    printf("[B-SPLINE]: control point dt = %.3f (original dt of %.3f)\n",dt,sumdt/(traj_points.size()-1));
 
     // convert all our trajectory points into SE(3) matrices
     // we are given [timestamp, p_IinG, q_GtoI]
@@ -60,8 +60,8 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
             timestamp_max = pose.first;
         }
     }
-    ROS_INFO("[B-SPLINE]: trajectory start time = %.6f",timestamp_min);
-    ROS_INFO("[B-SPLINE]: trajectory end time = %.6f",timestamp_max);
+    printf("[B-SPLINE]: trajectory start time = %.6f\n",timestamp_min);
+    printf("[B-SPLINE]: trajectory end time = %.6f\n",timestamp_max);
 
 
     // then create spline control points
@@ -72,7 +72,7 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
         double t0, t1;
         Eigen::Matrix4d pose0, pose1;
         bool success = find_bounding_poses(timestamp_curr, trajectory_points, t0, pose0, t1, pose1);
-        //ROS_INFO("[SIM]: time curr = %.6f | lambda = %.3f | dt = %.3f | dtmeas = %.3f",timestamp_curr,(timestamp_curr-t0)/(t1-t0),dt,(t1-t0));
+        //printf("[SIM]: time curr = %.6f | lambda = %.3f | dt = %.3f | dtmeas = %.3f\n",timestamp_curr,(timestamp_curr-t0)/(t1-t0),dt,(t1-t0));
 
         // If we didn't find a bounding pose, then that means we are at the end of the dataset
         // Thus break out of this loop since we have created our max number of control points
@@ -90,7 +90,7 @@ void BsplineSE3::feed_trajectory(std::vector<Eigen::VectorXd> traj_points) {
 
     // The start time of the system is two dt in since we need at least two older control points
     timestamp_start = timestamp_min + 2*dt;
-    ROS_INFO("[B-SPLINE]: start trajectory time of %.6f",timestamp_start);
+    printf("[B-SPLINE]: start trajectory time of %.6f\n",timestamp_start);
 
 }
 
@@ -104,7 +104,7 @@ bool BsplineSE3::get_pose(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::Vect
     double t0, t1, t2, t3;
     Eigen::Matrix4d pose0, pose1, pose2, pose3;
     bool success = find_bounding_control_points(timestamp, control_points, t0, pose0, t1, pose1, t2, pose2, t3, pose3);
-    //ROS_INFO("[SIM]: time curr = %.6f | dt1 = %.3f | dt2 = %.3f | dt3 = %.3f | dt4 = %.3f | success = %d",timestamp,t0-timestamp,t1-timestamp,t2-timestamp,t3-timestamp,(int)success);
+    //printf("[SIM]: time curr = %.6f | dt1 = %.3f | dt2 = %.3f | dt3 = %.3f | dt4 = %.3f | success = %d\n",timestamp,t0-timestamp,t1-timestamp,t2-timestamp,t3-timestamp,(int)success);
 
     // Return failure if we can't get bounding poses
     if(!success) {
@@ -142,7 +142,7 @@ bool BsplineSE3::get_velocity(double timestamp, Eigen::Matrix3d &R_GtoI, Eigen::
     double t0, t1, t2, t3;
     Eigen::Matrix4d pose0, pose1, pose2, pose3;
     bool success = find_bounding_control_points(timestamp, control_points, t0, pose0, t1, pose1, t2, pose2, t3, pose3);
-    //ROS_INFO("[SIM]: time curr = %.6f | dt1 = %.3f | dt2 = %.3f | dt3 = %.3f | dt4 = %.3f | success = %d",timestamp,t0-timestamp,t1-timestamp,t2-timestamp,t3-timestamp,(int)success);
+    //printf("[SIM]: time curr = %.6f | dt1 = %.3f | dt2 = %.3f | dt3 = %.3f | dt4 = %.3f | success = %d\n",timestamp,t0-timestamp,t1-timestamp,t2-timestamp,t3-timestamp,(int)success);
 
     // Return failure if we can't get bounding poses
     if(!success) {
@@ -270,41 +270,46 @@ bool BsplineSE3::find_bounding_poses(double timestamp, std::map<double,Eigen::Ma
     pose1 = Eigen::Matrix4d::Identity();
 
     // Find the bounding poses
-    double min_time = -INFINITY;
-    double max_time = INFINITY;
     bool found_older = false;
     bool found_newer = false;
 
-    // Find the bounding poses for interpolation. If no older one is found, measurement is unusable
-    for(std::pair<const double, Eigen::MatrixXd> &pose : poses) {
-        if (pose.first > min_time && pose.first <= timestamp){
-            min_time = pose.first;
+    // Find the bounding poses for interpolation.
+    auto lower_bound = poses.lower_bound(timestamp); // Finds timestamp or next(timestamp) if not available
+    auto upper_bound = poses.upper_bound(timestamp); // Finds next(timestamp)
+
+    if(lower_bound != poses.end()) {
+        // Check that the lower bound is the timestamp.
+        // If not then we move iterator to previous timestamp so that the timestamp is bounded
+        if(lower_bound->first == timestamp) {
             found_older = true;
-        }
-        if (pose.first < max_time && pose.first > timestamp){
-            max_time = pose.first;
-            found_newer = true;
+        } else if(lower_bound != poses.begin()) {
+            --lower_bound;
+            found_older = true;
         }
     }
 
-    // If we found the oldest one, set it
+    if(upper_bound != poses.end()) {
+        found_newer = true;
+    }
+
+    // If we found the older one, set it
     if (found_older) {
-        t0 = min_time;
-        pose0 = poses.at(min_time);
+        t0 = lower_bound->first;
+        pose0 = lower_bound->second;
     }
 
     // If we found the newest one, set it
-    if(found_newer) {
-        t1 = max_time;
-        pose1 = poses.at(max_time);
+    if (found_newer) {
+        t1 = upper_bound->first;
+        pose1 = upper_bound->second;
     }
 
     // Assert the timestamps
-    if(found_older && found_newer)
-        assert(t0<t1);
+    if (found_older && found_newer)
+        assert(t0 < t1);
 
     // Return true if we found both bounds
-    return (found_older && found_newer);
+    return (found_older && found_newer); 
 
 }
 
@@ -328,47 +333,46 @@ bool BsplineSE3::find_bounding_control_points(double timestamp, std::map<double,
     bool success = find_bounding_poses(timestamp, poses, t1, pose1, t2, pose2);
 
     // Return false if this was a failure
-    if(!success)
+    if (!success)
         return false;
 
     // Now find the poses that are below and above
-    double min_time = -INFINITY;
-    double max_time = INFINITY;
-    bool found_min_of_min = false;
-    bool found_max_of_max = false;
-    for(std::pair<const double, Eigen::MatrixXd> &pose : poses) {
-        if (pose.first > min_time && pose.first < t1){
-            min_time = pose.first;
-            found_min_of_min = true;
-        }
-        if (pose.first < max_time && pose.first > t2){
-            max_time = pose.first;
-            found_max_of_max = true;
-        }
+    auto iter_t1 = poses.find(t1);
+    auto iter_t2 = poses.find(t2);
+
+    // Check that t1 is not the first timestamp
+    if(iter_t1 == poses.begin()) {
+        return false;
     }
 
-    // If we found the oldest one, set it
-    if (found_min_of_min) {
-        t0 = min_time;
-        pose0 = poses.at(min_time);
+    // Move the older pose backwards in time
+    // Move the newer one forwards in time
+    auto iter_t0 = --iter_t1;
+    auto iter_t3 = ++iter_t2;
+
+    // Check that it is valid
+    if (iter_t3 == poses.end()) {
+        return false;
     }
 
-    // If we found the newest one, set it
-    if(found_max_of_max) {
-        t3 = max_time;
-        pose3 = poses.at(max_time);
-    }
+    // Set the oldest one
+    t0 = iter_t0->first;
+    pose0 = iter_t0->second;
+
+    // Set the newest one
+    t3 = iter_t3->first;
+    pose3 = iter_t3->second;
 
     // Assert the timestamps
-    if(success && found_min_of_min && found_max_of_max) {
-        assert(t0<t1);
-        assert(t1<t2);
-        assert(t2<t3);
+    if (success) {
+        assert(t0 < t1);
+        assert(t1 < t2);
+        assert(t2 < t3);
     }
 
     // Return true if we found all four bounding poses
-    return (success && found_min_of_min && found_max_of_max);
-
+    return success;
+ 
 }
 
 

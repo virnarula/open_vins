@@ -5,3 +5,4 @@ data
 *.*~
 .idea
 doxgen_generated
+*.so

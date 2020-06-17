@@ -29,7 +29,6 @@
 #include <unordered_map>
 #include <Eigen/StdVector>
 
-#include <ros/ros.h>
 #include <boost/thread.hpp>
 #include <opencv/cv.hpp>
 #include <opencv2/core/core.hpp>
@@ -38,6 +37,8 @@
 #include "Grider_FAST.h"
 #include "Grider_DOG.h"
 #include "feat/FeatureDatabase.h"
+#include "utils/colors.h"
+
 
 namespace ov_core {
 
@@ -242,7 +243,31 @@ namespace ov_core {
             return database;
         }
 
-    protected:
+        /**
+         * @brief Changes the ID of an actively tracked feature to another one
+         * @param id_old Old id we want to change
+         * @param id_new Id we want to change the old id to
+         */
+        void change_feat_id(size_t id_old, size_t id_new) {
+
+            // If found in db then replace
+            if(database->get_internal_data().find(id_old)!=database->get_internal_data().end()) {
+                Feature* feat = database->get_internal_data().at(id_old);
+                database->get_internal_data().erase(id_old);
+                feat->featid = id_new;
+                database->get_internal_data().insert({id_new, feat});
+            }
+
+            // Update current track IDs
+            for(auto &cam_ids_pair : ids_last) {
+                for(size_t i=0; i<cam_ids_pair.second.size(); i++) {
+                    if(cam_ids_pair.second.at(i)==id_old) {
+                        ids_last.at(cam_ids_pair.first).at(i) = id_new;
+                    }
+                }
+            }
+
+        }
 
         /**
          * @brief Main function that will undistort/normalize a point.
@@ -265,6 +290,8 @@ namespace ov_core {
             }
             return undistort_point_brown(pt_in, camK, camD);
         }
+
+    protected:
 
         /**
          * @brief Undistort function RADTAN/BROWN.

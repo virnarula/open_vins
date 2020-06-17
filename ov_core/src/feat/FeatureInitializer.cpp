@@ -152,7 +152,7 @@ bool FeatureInitializer::single_triangulation(Feature* feat, std::unordered_map<
 
     // If we have a bad condition number, or it is too close
     // Then set the flag for bad (i.e. set z-axis to nan)
-    if (std::abs(condA) > _options.max_cond_number || p_f(2,0) < _options.min_dist || p_f(2,0) > _options.max_dist || std::isnan(p_f.norm())){
+    if (std::abs(condA) > _options.max_cond_number || p_f(2,0) < _options.min_dist || p_f(2,0) > _options.max_dist || std::isnan(p_f.norm())) {
         return false;
     }
 
@@ -221,7 +221,7 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
                     Eigen::Matrix<double,3,1> p_CiinA;
                     p_CiinA.noalias() = R_GtoA*(p_CiinG-p_AinG);
                     Eigen::Matrix<double,3,1> p_AinCi;
-                    p_AinCi.noalias() -= R_AtoCi*p_CiinA;
+                    p_AinCi.noalias() = -R_AtoCi*p_CiinA;
 
                     //=====================================================================================
                     //=====================================================================================
@@ -259,7 +259,7 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
 
         // Solve Levenberg iteration
         Eigen::Matrix<double,3,3> Hess_l = Hess;
-        for (size_t r=0; r < (size_t)Hess.rows(); r++){
+        for (size_t r=0; r < (size_t)Hess.rows(); r++) {
             Hess_l(r,r) *= (1.0+lam);
         }
 
@@ -268,6 +268,9 @@ bool FeatureInitializer::single_gaussnewton(Feature* feat, std::unordered_map<si
 
         // Check if error has gone down
         double cost = compute_error(clonesCAM,feat,alpha+dx(0,0),beta+dx(1,0),rho+dx(2,0));
+
+        // Debug print
+        //cout << "run = " << runs << " | cost = " << dx.norm() << " | lamda = " << lam << " | depth = " << 1/rho << endl;
 
         // Check if converged
         if (cost <= cost_old && (cost_old-cost)/cost_old < _options.min_dcost) {
