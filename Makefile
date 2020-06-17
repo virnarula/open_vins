@@ -18,8 +18,8 @@ plugin.opt.so:
 	cmake -DDNDEBUG=1 -DCMAKE_BUILD_TYPE=Release .. && \
 	make "-j$(nproc)" && \
 	cd .. && \
-	rm -f  plugin.dbg.so && \
-	ln -s build/ov_msckf/libslam2.so plugin.dbg.so && \
+	rm -f  plugin.opt.so && \
+	ln -s build/ov_msckf/libslam2.so plugin.opt.so && \
 	true
 
 .PHONY: clean
