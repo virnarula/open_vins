@@ -91,6 +91,7 @@ namespace ov_msckf {
         void update(State *state, std::vector<Feature*>& feature_vec);
 
 
+
     protected:
 
 
@@ -103,13 +104,7 @@ namespace ov_msckf {
         /// Chi squared 95th percentile table (lookup would be size of residual)
         std::map<int, double> chi_squared_table;
 
-		unsigned total_calls = 0;
-		double total_msckf_clean_time = 0.0;
-		double total_msckf_triang_time = 0.0;
-		double total_msckf_create_sys_time = 0.0;
-		double total_msckf_compress_sys_time = 0.0;
-		double total_msckf_update_state_time = 0.0;
-		double total_msckf_total_time = 0.0;
+
     };
 
 

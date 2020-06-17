@@ -8,7 +8,7 @@ project(ov_core)
 
 # Include libraries
 find_package(Eigen3 REQUIRED)
-find_package(OpenCV 3.4 REQUIRED)
+find_package(OpenCV 3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem thread date_time)
 
 # display message to user
@@ -93,8 +93,3 @@ add_executable(test_webcam src/test_webcam.cpp)
 target_link_libraries(test_webcam ov_core_lib ${thirdparty_libraries})
 
 
-<<<<<<< HEAD
-add_executable(test_repeat src/test_repeat.cpp)
-target_link_libraries(test_repeat ov_core_lib ${thirdparty_libraries})
-=======
->>>>>>> 2b2372e9ff

@@ -125,43 +125,10 @@ namespace ov_core {
          */
         void perform_matching(const std::vector<cv::Mat> &img0pyr, const std::vector<cv::Mat> &img1pyr, std::vector<cv::KeyPoint> &pts0,
                               std::vector<cv::KeyPoint> &pts1, size_t id0, size_t id1, std::vector<uchar> &mask_out);
-		void perform_matching_right(const std::vector<cv::Mat> &img0pyr, const std::vector<cv::Mat> &img1pyr, std::vector<cv::KeyPoint> &pts0,
-                              std::vector<cv::KeyPoint> &pts1, size_t id0, size_t id1, std::vector<uchar> &mask_out);
-		void perform_matching_left(const std::vector<cv::Mat> &img0pyr, const std::vector<cv::Mat> &img1pyr, std::vector<cv::KeyPoint> &pts0,
-                              std::vector<cv::KeyPoint> &pts1, size_t id0, size_t id1, std::vector<uchar> &mask_out);
-		void perform_matching_stereo(const std::vector<cv::Mat> &img0pyr, const std::vector<cv::Mat> &img1pyr, std::vector<cv::KeyPoint> &pts0,
-                              std::vector<cv::KeyPoint> &pts1, size_t id0, size_t id1, std::vector<uchar> &mask_out);
 
         // Timing variables
         boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6, rT7;
 
-        // detection timing
-        boost::posix_time::ptime rTDetect1, rTDetect2, rTDetect3;
-
-
-		// average total KLT/FeedStereo time
-		unsigned feed_stereo_count = 0;
-		double total_pyramid_time = 0.0;
-		double total_detection_time = 0.0;
-		double total_temporal_klt_time = 0.0;
-		double total_stereo_klt_time = 0.0;
-		double total_feature_db_update_time = 0.0;
-		double total_total_feed_stereo_time = 0.0;
-		
-		// average matching time
-		unsigned total_temporal_left_calls = 0;
-		unsigned total_temporal_right_calls = 0;
-		unsigned total_stereo_calls = 0;
-		double total_KLT_temporal_left = 0.0;
-		double total_KLT_temporal_right = 0.0;
-		double total_KLT_stereo = 0.0;
-		double total_undistort_temporal_left = 0.0;
-		double total_undistort_temporal_right = 0.0;
-		double total_undistort_stereo = 0.0;
-		double total_RANSAC_temporal_left = 0.0;
-		double total_RANSAC_temporal_right = 0.0;
-		double total_RANSAC_stereo = 0.0;
-		
         // Parameters for our FAST grid detector
         int threshold;
         int grid_x;

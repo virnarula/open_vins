@@ -65,13 +65,8 @@ namespace ov_msckf {
          * @brief Default constructor, will load all configuration variables
          * @param params_ Parameters loaded from either ROS or CMDLINE
          */
-<<<<<<< HEAD
-        VioManager();
-
-=======
         VioManager(VioManagerOptions& params_);
         
->>>>>>> 2b2372e9ff
 
         /**
          * @brief Feed function for inertial data
@@ -218,17 +213,7 @@ namespace ov_msckf {
             return aruco_feats;
         }
 
-        std::vector<double>& get_tracker_times() {
-            return frame_tracking_time;
-        }
 
-        std::vector<double>& get_filter_times() {
-            return frame_filter_time;
-        }
-
-        std::vector<double>& get_total_times() {
-            return frame_total_time;
-        }
 
     protected:
 
@@ -280,22 +265,9 @@ namespace ov_msckf {
         /// Good features that where used in the last update
         std::vector<Eigen::Vector3d> good_features_MSCKF;
 
-<<<<<<< HEAD
-        // Timing variables
-        boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6;
-        unsigned total_images;
-        unsigned counted_images;
-        double total_tracking_time;
-        double total_filter_time;
-        double total_frame_time;
-        std::vector<double> frame_tracking_time;
-        std::vector<double> frame_filter_time;
-        std::vector<double> frame_total_time;
-=======
         // Timing statistic file and variables
         std::ofstream of_statistics;
         boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6, rT7;
->>>>>>> 2b2372e9ff
 
         // Track how much distance we have traveled
         double timelastupdate = -1;

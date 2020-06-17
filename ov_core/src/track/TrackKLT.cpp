@@ -188,15 +188,9 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::vector<cv::KeyPoint> pts_right_new = pts_last[cam_id_right];
 
     // Lets track temporally
-<<<<<<< HEAD
-    boost::thread t_ll = boost::thread(&TrackKLT::perform_matching_left, this, boost::cref(img_pyramid_last[cam_id_left]), boost::cref(imgpyr_left),
-                                       boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new), cam_id_left, cam_id_left, boost::ref(mask_ll));
-    boost::thread t_rr = boost::thread(&TrackKLT::perform_matching_right, this, boost::cref(img_pyramid_last[cam_id_right]), boost::cref(imgpyr_right),
-=======
     std::thread t_ll = timed_thread("open_vins", &TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_left]), boost::cref(imgpyr_left),
                                        boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new), cam_id_left, cam_id_left, boost::ref(mask_ll));
     std::thread t_rr = timed_thread("open_vins", &TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_right]), boost::cref(imgpyr_right),
->>>>>>> 2b2372e9ff
                                        boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new), cam_id_right, cam_id_right, boost::ref(mask_rr));
 
     // Wait till both threads finish
@@ -210,15 +204,10 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
 
 
     // left to right matching
-<<<<<<< HEAD
-    std::vector<uchar> mask_lr;
-    perform_matching_stereo(imgpyr_left, imgpyr_right, pts_left_new, pts_right_new, cam_id_left, cam_id_right, mask_lr);
-=======
     // TODO: we should probably still do this to reject outliers
     // TODO: maybe we should collect all tracks that are in both frames and make they pass this?
     //std::vector<uchar> mask_lr;
     //perform_matching(imgpyr_left, imgpyr_right, pts_left_new, pts_right_new, cam_id_left, cam_id_right, mask_lr);
->>>>>>> 2b2372e9ff
     rT5 =  boost::posix_time::microsec_clock::local_time();
 
 
@@ -319,22 +308,6 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     ids_last[cam_id_right] = good_ids_right;
     rT6 =  boost::posix_time::microsec_clock::local_time();
 
-<<<<<<< HEAD
-
-	double pyramid_time = (rT2-rT1).total_microseconds() * 1e-3;
-	double detection_time = (rT3-rT2).total_microseconds() * 1e-3;
-	double temporal_klt_time = (rT4-rT3).total_microseconds() * 1e-3;
-	double stereo_klt_time = (rT5-rT4).total_microseconds() * 1e-3;
-	double feature_db_update_time = (rT6-rT5).total_microseconds() * 1e-3;
-	double total_feed_stereo_time = (rT6-rT1).total_microseconds() * 1e-3;
-
-	total_pyramid_time += pyramid_time;
-	total_detection_time += detection_time;
-	total_temporal_klt_time += temporal_klt_time;
-	total_stereo_klt_time += stereo_klt_time;
-	total_feature_db_update_time += feature_db_update_time;
-	total_total_feed_stereo_time += total_feed_stereo_time;
-=======
     // Timing information
     //printf("[TIME-KLT]: %.4f seconds for pyramid\n",(rT2-rT1).total_microseconds() * 1e-6);
     //printf("[TIME-KLT]: %.4f seconds for detection\n",(rT3-rT2).total_microseconds() * 1e-6);
@@ -342,34 +315,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     //printf("[TIME-KLT]: %.4f seconds for stereo klt\n",(rT5-rT4).total_microseconds() * 1e-6);
     //printf("[TIME-KLT]: %.4f seconds for feature DB update (%d features)\n",(rT6-rT5).total_microseconds() * 1e-6, (int)good_left.size());
     //printf("[TIME-KLT]: %.4f seconds for total\n",(rT6-rT1).total_microseconds() * 1e-6);
->>>>>>> 2b2372e9ff
 
-	feed_stereo_count++;
-	
-    // Timing information
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for KLT_temporal_left", total_KLT_temporal_left/total_temporal_left_calls);
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for Undistort_temporal_left", total_undistort_temporal_left/total_temporal_left_calls);
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for RANSAC_temporal_left", total_RANSAC_temporal_left/total_temporal_left_calls);
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for KLT_temporal_right", total_KLT_temporal_right/total_temporal_right_calls);
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for Undistort_temporal_right", total_undistort_temporal_right/total_temporal_right_calls);
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for RANSAC_temporal_right", total_RANSAC_temporal_right/total_temporal_right_calls);
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for KLT_stereo", total_KLT_stereo/total_stereo_calls);
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for Undistort_stereo", total_undistort_stereo/total_stereo_calls);
-	ROS_INFO("[AVERAGE-MATCHING-TIME]: %.4f ms for RANSAC_stereo", total_RANSAC_stereo/total_stereo_calls);
-	
-    ROS_INFO("[TIME-KLT]: %.4f ms for pyramid", pyramid_time);
-    ROS_INFO("[TIME-KLT]: %.4f ms for detection", detection_time);
-    ROS_INFO("[TIME-KLT]: %.4f ms for temporal klt", temporal_klt_time);
-    ROS_INFO("[TIME-KLT]: %.4f ms for stereo klt", stereo_klt_time);
-    ROS_INFO("[TIME-KLT]: %.4f ms for feature DB update (%d features)", feature_db_update_time);
-    ROS_INFO("[TIME-KLT]: %.4f ms for total", total_feed_stereo_time);
-
-    ROS_INFO("[AVERAGE-KLT]: %.4f ms for pyramid", total_pyramid_time/feed_stereo_count);
-    ROS_INFO("[AVERAGE-KLT]: %.4f ms for detection", total_detection_time/feed_stereo_count);
-    ROS_INFO("[AVERAGE-KLT]: %.4f ms for temporal klt", total_temporal_klt_time/feed_stereo_count);
-    ROS_INFO("[AVERAGE-KLT]: %.4f ms for stereo klt", total_stereo_klt_time/feed_stereo_count);
-    ROS_INFO("[AVERAGE-KLT]: %.4f ms for feature DB update (%d features)", total_feature_db_update_time/feed_stereo_count);
-    ROS_INFO("[AVERAGE-KLT]: %.4f ms for total", total_total_feed_stereo_time/feed_stereo_count);
 }
 
 void TrackKLT::perform_detection_monocular(const std::vector<cv::Mat> &img0pyr, std::vector<cv::KeyPoint> &pts0, std::vector<size_t> &ids0) {
@@ -436,8 +382,6 @@ void TrackKLT::perform_detection_monocular(const std::vector<cv::Mat> &img0pyr, 
 void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, const std::vector<cv::Mat> &img1pyr,
                                         std::vector<cv::KeyPoint> &pts0, std::vector<cv::KeyPoint> &pts1,
                                         std::vector<size_t> &ids0, std::vector<size_t> &ids1) {
-
-    rTDetect1 = boost::posix_time::microsec_clock::local_time();
 
     // Create a 2D occupancy grid for this current image
     // Note that we scale this down, so that each grid point is equal to a set of pixels
@@ -552,20 +496,8 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
                 }
             }
 
-<<<<<<< HEAD
-    rTDetect2 = boost::posix_time::microsec_clock::local_time();
-
-    // Now do KLT tracking to get the valid projections
-    // Note: we have a pretty big window size here since our projection might be bad
-    // Note: but this might cause failure in cases of repeated textures (eg. checkerboard)
-    std::vector<uchar> mask;
-    std::vector<float> error;
-    cv::TermCriteria term_crit = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 15, 0.01);
-    cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0_new, pts1_new, mask, error, win_size, pyr_levels, term_crit, cv::OPTFLOW_USE_INITIAL_FLOW);
-=======
         }
     }
->>>>>>> 2b2372e9ff
 
     // RIGHT: if we need features we should extract them in the current frame
     // RIGHT: note that we don't track them to the left as we already did left->right tracking above
@@ -591,14 +523,7 @@ void TrackKLT::perform_detection_stereo(const std::vector<cv::Mat> &img0pyr, con
 
     }
 
-<<<<<<< HEAD
-    rTDetect3 = boost::posix_time::microsec_clock::local_time();
 
-    ROS_INFO("[TIME-DETECTION]: %.4f ms for Grid", (rTDetect2 - rTDetect1).total_microseconds() * 1e-3);
-    ROS_INFO("[TIME-DETECTION]: %.4f ms for KLT", (rTDetect3 - rTDetect2).total_microseconds() * 1e-3);
-=======
-
->>>>>>> 2b2372e9ff
 }
 
 
@@ -607,11 +532,6 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
                                 size_t id0, size_t id1,
                                 std::vector<uchar>& mask_out) {
 
-	// matching timing
-	boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
-	
-    rTMatch1 = boost::posix_time::microsec_clock::local_time();
-
     // We must have equal vectors
     assert(kpts0.size() == kpts1.size());
 
@@ -640,7 +560,6 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
     cv::TermCriteria term_crit = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 15, 0.01);
     cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0, pts1, mask_klt, error, win_size, pyr_levels, term_crit, cv::OPTFLOW_USE_INITIAL_FLOW);
 
-    rTMatch2 = boost::posix_time::microsec_clock::local_time();
 
     // Normalize these points, so we can then do ransac
     // We don't want to do ransac on distorted image uvs since the mapping is nonlinear
@@ -649,8 +568,6 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
         pts0_n.push_back(undistort_point(pts0.at(i),id0));
         pts1_n.push_back(undistort_point(pts1.at(i),id1));
     }
-
-    rTMatch3 = boost::posix_time::microsec_clock::local_time();
 
     // Do RANSAC outlier rejection (note since we normalized the max pixel error is now in the normalized cords)
     std::vector<uchar> mask_rsc;
@@ -671,277 +588,6 @@ void TrackKLT::perform_matching(const std::vector<cv::Mat>& img0pyr, const std::
         kpts1.at(i).pt = pts1.at(i);
     }
 
-    rTMatch4 = boost::posix_time::microsec_clock::local_time();
-
-	double KLT_time = (rTMatch2 - rTMatch1).total_microseconds() * 1e-3;
-	double undistort_time = (rTMatch3 - rTMatch2).total_microseconds() * 1e-3;
-	double RANSAC_time = (rTMatch4 - rTMatch3).total_microseconds() * 1e-3;
-
-	// total_KLT_temporal += KLT_time;
-	// total_undistort_temporal += undistort_time;
-	// total_RANSAC_temporal += RANSAC_time;
-
-	// total_temporal_calls++;
-	// cout << "temp calls: " << total_temporal_calls << endl;
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal", KLT_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal", undistort_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal", RANSAC_time);
-}
-
-void TrackKLT::perform_matching_left(const std::vector<cv::Mat>& img0pyr, const std::vector<cv::Mat>& img1pyr,
-                                std::vector<cv::KeyPoint>& kpts0, std::vector<cv::KeyPoint>& kpts1,
-                                size_t id0, size_t id1,
-                                std::vector<uchar>& mask_out) {
-
-	// matching timing
-	boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
-	
-    rTMatch1 = boost::posix_time::microsec_clock::local_time();
-
-    // We must have equal vectors
-    assert(kpts0.size() == kpts1.size());
-
-    // Return if we don't have any points
-    if(kpts0.empty() || kpts1.empty())
-        return;
-
-    // Convert keypoints into points (stupid opencv stuff)
-    std::vector<cv::Point2f> pts0, pts1;
-    for(size_t i=0; i<kpts0.size(); i++) {
-        pts0.push_back(kpts0.at(i).pt);
-        pts1.push_back(kpts1.at(i).pt);
-    }
-
-    // If we don't have enough points for ransac just return empty
-    // We set the mask to be all zeros since all points failed RANSAC
-    if(pts0.size() < 10) {
-        for(size_t i=0; i<pts0.size(); i++)
-            mask_out.push_back((uchar)0);
-        return;
-    }
-
-    // Now do KLT tracking to get the valid new points
-    std::vector<uchar> mask_klt;
-    std::vector<float> error;
-    cv::TermCriteria term_crit = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 15, 0.01);
-    cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0, pts1, mask_klt, error, win_size, pyr_levels, term_crit, cv::OPTFLOW_USE_INITIAL_FLOW);
-
-    rTMatch2 = boost::posix_time::microsec_clock::local_time();
-
-    // Normalize these points, so we can then do ransac
-    // We don't want to do ransac on distorted image uvs since the mapping is nonlinear
-    std::vector<cv::Point2f> pts0_n, pts1_n;
-    for(size_t i=0; i<pts0.size(); i++) {
-        pts0_n.push_back(undistort_point(pts0.at(i),id0));
-        pts1_n.push_back(undistort_point(pts1.at(i),id1));
-    }
-
-    rTMatch3 = boost::posix_time::microsec_clock::local_time();
-
-    // Do RANSAC outlier rejection (note since we normalized the max pixel error is now in the normalized cords)
-    std::vector<uchar> mask_rsc;
-    double max_focallength_img0 = std::max(camera_k_OPENCV.at(id0)(0,0),camera_k_OPENCV.at(id0)(1,1));
-    double max_focallength_img1 = std::max(camera_k_OPENCV.at(id1)(0,0),camera_k_OPENCV.at(id1)(1,1));
-    double max_focallength = std::max(max_focallength_img0,max_focallength_img1);
-    cv::findFundamentalMat(pts0_n, pts1_n, cv::FM_RANSAC, 1/max_focallength, 0.999, mask_rsc);
-
-    // Loop through and record only ones that are valid
-    for(size_t i=0; i<mask_klt.size(); i++) {
-        auto mask = (uchar)((i < mask_klt.size() && mask_klt[i] && i < mask_rsc.size() && mask_rsc[i])? 1 : 0);
-        mask_out.push_back(mask);
-    }
-
-    // Copy back the updated positions
-    for(size_t i=0; i<pts0.size(); i++) {
-        kpts0.at(i).pt = pts0.at(i);
-        kpts1.at(i).pt = pts1.at(i);
-    }
-
-    rTMatch4 = boost::posix_time::microsec_clock::local_time();
-
-	double KLT_time = (rTMatch2 - rTMatch1).total_microseconds() * 1e-3;
-	double undistort_time = (rTMatch3 - rTMatch2).total_microseconds() * 1e-3;
-	double RANSAC_time = (rTMatch4 - rTMatch3).total_microseconds() * 1e-3;
-
-	total_KLT_temporal_left += KLT_time;
-	total_undistort_temporal_left += undistort_time;
-	total_RANSAC_temporal_left += RANSAC_time;
-
-	total_temporal_left_calls++;
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal_left", KLT_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal_left", undistort_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal_left", RANSAC_time);
-}
-
-void TrackKLT::perform_matching_right(const std::vector<cv::Mat>& img0pyr, const std::vector<cv::Mat>& img1pyr,
-                                std::vector<cv::KeyPoint>& kpts0, std::vector<cv::KeyPoint>& kpts1,
-                                size_t id0, size_t id1,
-                                std::vector<uchar>& mask_out) {
-
-	// matching timing
-	boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
-	
-	rTMatch1 = boost::posix_time::microsec_clock::local_time();
-
-    // We must have equal vectors
-    assert(kpts0.size() == kpts1.size());
-
-    // Return if we don't have any points
-    if(kpts0.empty() || kpts1.empty())
-        return;
-
-    // Convert keypoints into points (stupid opencv stuff)
-    std::vector<cv::Point2f> pts0, pts1;
-    for(size_t i=0; i<kpts0.size(); i++) {
-        pts0.push_back(kpts0.at(i).pt);
-        pts1.push_back(kpts1.at(i).pt);
-    }
-
-    // If we don't have enough points for ransac just return empty
-    // We set the mask to be all zeros since all points failed RANSAC
-    if(pts0.size() < 10) {
-        for(size_t i=0; i<pts0.size(); i++)
-            mask_out.push_back((uchar)0);
-        return;
-    }
-
-    // Now do KLT tracking to get the valid new points
-    std::vector<uchar> mask_klt;
-    std::vector<float> error;
-    cv::TermCriteria term_crit = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 15, 0.01);
-    cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0, pts1, mask_klt, error, win_size, pyr_levels, term_crit, cv::OPTFLOW_USE_INITIAL_FLOW);
-
-    rTMatch2 = boost::posix_time::microsec_clock::local_time();
-
-    // Normalize these points, so we can then do ransac
-    // We don't want to do ransac on distorted image uvs since the mapping is nonlinear
-    std::vector<cv::Point2f> pts0_n, pts1_n;
-    for(size_t i=0; i<pts0.size(); i++) {
-        pts0_n.push_back(undistort_point(pts0.at(i),id0));
-        pts1_n.push_back(undistort_point(pts1.at(i),id1));
-    }
-
-    rTMatch3 = boost::posix_time::microsec_clock::local_time();
-
-    // Do RANSAC outlier rejection (note since we normalized the max pixel error is now in the normalized cords)
-    std::vector<uchar> mask_rsc;
-    double max_focallength_img0 = std::max(camera_k_OPENCV.at(id0)(0,0),camera_k_OPENCV.at(id0)(1,1));
-    double max_focallength_img1 = std::max(camera_k_OPENCV.at(id1)(0,0),camera_k_OPENCV.at(id1)(1,1));
-    double max_focallength = std::max(max_focallength_img0,max_focallength_img1);
-    cv::findFundamentalMat(pts0_n, pts1_n, cv::FM_RANSAC, 1/max_focallength, 0.999, mask_rsc);
-
-    // Loop through and record only ones that are valid
-    for(size_t i=0; i<mask_klt.size(); i++) {
-        auto mask = (uchar)((i < mask_klt.size() && mask_klt[i] && i < mask_rsc.size() && mask_rsc[i])? 1 : 0);
-        mask_out.push_back(mask);
-    }
-
-    // Copy back the updated positions
-    for(size_t i=0; i<pts0.size(); i++) {
-        kpts0.at(i).pt = pts0.at(i);
-        kpts1.at(i).pt = pts1.at(i);
-    }
-
-    rTMatch4 = boost::posix_time::microsec_clock::local_time();
-
-	double KLT_time = (rTMatch2 - rTMatch1).total_microseconds() * 1e-3;
-	double undistort_time = (rTMatch3 - rTMatch2).total_microseconds() * 1e-3;
-	double RANSAC_time = (rTMatch4 - rTMatch3).total_microseconds() * 1e-3;
-
-	total_KLT_temporal_right += KLT_time;
-	total_undistort_temporal_right += undistort_time;
-	total_RANSAC_temporal_right += RANSAC_time;
-
-	total_temporal_right_calls++;
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_temporal_right", KLT_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_temporal_right", undistort_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_temporal_right", RANSAC_time);
-}
-
-void TrackKLT::perform_matching_stereo(const std::vector<cv::Mat>& img0pyr, const std::vector<cv::Mat>& img1pyr,
-                                std::vector<cv::KeyPoint>& kpts0, std::vector<cv::KeyPoint>& kpts1,
-                                size_t id0, size_t id1,
-                                std::vector<uchar>& mask_out) {
-
-	// matching timing
-	boost::posix_time::ptime rTMatch1, rTMatch2, rTMatch3, rTMatch4;
-	
-    rTMatch1 = boost::posix_time::microsec_clock::local_time();
-
-    // We must have equal vectors
-    assert(kpts0.size() == kpts1.size());
-
-    // Return if we don't have any points
-    if(kpts0.empty() || kpts1.empty())
-        return;
-
-    // Convert keypoints into points (stupid opencv stuff)
-    std::vector<cv::Point2f> pts0, pts1;
-    for(size_t i=0; i<kpts0.size(); i++) {
-        pts0.push_back(kpts0.at(i).pt);
-        pts1.push_back(kpts1.at(i).pt);
-    }
-
-    // If we don't have enough points for ransac just return empty
-    // We set the mask to be all zeros since all points failed RANSAC
-    if(pts0.size() < 10) {
-        for(size_t i=0; i<pts0.size(); i++)
-            mask_out.push_back((uchar)0);
-        return;
-    }
-
-    // Now do KLT tracking to get the valid new points
-    std::vector<uchar> mask_klt;
-    std::vector<float> error;
-    cv::TermCriteria term_crit = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 15, 0.01);
-    cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0, pts1, mask_klt, error, win_size, pyr_levels, term_crit, cv::OPTFLOW_USE_INITIAL_FLOW);
-
-    rTMatch2 = boost::posix_time::microsec_clock::local_time();
-
-    // Normalize these points, so we can then do ransac
-    // We don't want to do ransac on distorted image uvs since the mapping is nonlinear
-    std::vector<cv::Point2f> pts0_n, pts1_n;
-    for(size_t i=0; i<pts0.size(); i++) {
-        pts0_n.push_back(undistort_point(pts0.at(i),id0));
-        pts1_n.push_back(undistort_point(pts1.at(i),id1));
-    }
-
-    rTMatch3 = boost::posix_time::microsec_clock::local_time();
-
-    // Do RANSAC outlier rejection (note since we normalized the max pixel error is now in the normalized cords)
-    std::vector<uchar> mask_rsc;
-    double max_focallength_img0 = std::max(camera_k_OPENCV.at(id0)(0,0),camera_k_OPENCV.at(id0)(1,1));
-    double max_focallength_img1 = std::max(camera_k_OPENCV.at(id1)(0,0),camera_k_OPENCV.at(id1)(1,1));
-    double max_focallength = std::max(max_focallength_img0,max_focallength_img1);
-    cv::findFundamentalMat(pts0_n, pts1_n, cv::FM_RANSAC, 1/max_focallength, 0.999, mask_rsc);
-
-    // Loop through and record only ones that are valid
-    for(size_t i=0; i<mask_klt.size(); i++) {
-        auto mask = (uchar)((i < mask_klt.size() && mask_klt[i] && i < mask_rsc.size() && mask_rsc[i])? 1 : 0);
-        mask_out.push_back(mask);
-    }
-
-    // Copy back the updated positions
-    for(size_t i=0; i<pts0.size(); i++) {
-        kpts0.at(i).pt = pts0.at(i);
-        kpts1.at(i).pt = pts1.at(i);
-    }
-
-    rTMatch4 = boost::posix_time::microsec_clock::local_time();
-
-	double KLT_time = (rTMatch2 - rTMatch1).total_microseconds() * 1e-3;
-	double undistort_time = (rTMatch3 - rTMatch2).total_microseconds() * 1e-3;
-	double RANSAC_time = (rTMatch4 - rTMatch3).total_microseconds() * 1e-3;
-
-	total_KLT_stereo += KLT_time;
-	total_undistort_stereo += undistort_time;
-	total_RANSAC_stereo += RANSAC_time;
-
-	total_stereo_calls++;
-	
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for KLT_stereo", KLT_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for Undistort_stereo", undistort_time);
-    ROS_INFO("[TIME-MATCHING]: %.4f ms for RANSAC_stereo", RANSAC_time);
 }
 
 

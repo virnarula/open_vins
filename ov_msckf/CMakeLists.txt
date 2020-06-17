@@ -11,7 +11,7 @@ project(ov_msckf)
 
 # Include libraries
 find_package(Eigen3 REQUIRED)
-find_package(OpenCV 3.4 REQUIRED)
+find_package(OpenCV 3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem thread date_time)
 
 # display message to user
@@ -98,16 +98,9 @@ target_include_directories(ov_msckf_lib PUBLIC src)
 # Make binary files!
 ##################################################
 
-add_library(slam2 SHARED src/slam2.cc)
-target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
+add_executable(run_simulation src/run_simulation.cpp)
+target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
 
-<<<<<<< HEAD
-# add_executable(run_simulation src/run_simulation.cpp)
-# target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
-
-# add_executable(run_subscribe_msckf src/run_subscribe_msckf.cpp)
-# target_link_libraries(run_subscribe_msckf ov_msckf_lib ${thirdparty_libraries})
-=======
 add_library(slam2 SHARED src/slam2.cpp)
 target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
 
@@ -118,4 +111,3 @@ target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
 #target_link_libraries(test_sim_repeat ov_msckf_lib ${thirdparty_libraries})
 
 
->>>>>>> 2b2372e9ff

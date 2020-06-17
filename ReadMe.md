@@ -1,18 +1,10 @@
 **Part of [ILLIXR](https://github.com/ILLIXR/ILLIXR), the Illinios Extended Reality Benchmark Suite. For instructions on how to use OpenVINS for ILLIXR, see ILLIXR_INSTRUCTIONS.MD**
-<<<<<<< HEAD
-=======
 
 # OpenVINS
->>>>>>> 2b2372e9ff
 
 
-<<<<<<< HEAD
-Welcome to the Open VINS project!
-The Open VINS project houses some core computer vision code along with a state-of-the art filter-based visual-inertial estimator.
-=======
 Welcome to the OpenVINS project!
 The OpenVINS project houses some core computer vision code along with a state-of-the art filter-based visual-inertial estimator.
->>>>>>> 2b2372e9ff
 The core filter is an [Extended Kalman filter](https://en.wikipedia.org/wiki/Extended_Kalman_filter) which fuses inertial information with sparse visual feature tracks.
 These visual feature tracks are fused leveraging the [Multi-State Constraint Kalman Filter (MSCKF)](https://ieeexplore.ieee.org/document/4209642) sliding window formulation which allows for 3D features to update the state estimate without directly estimating the feature states in the filter.
 Inspired by graph-based optimization systems, the included filter has modularity allowing for convenient covariance management with a proper type-based state system.

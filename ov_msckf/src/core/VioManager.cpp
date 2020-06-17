@@ -34,267 +34,26 @@ VioManager::VioManager(VioManagerOptions& params_) {
     printf("OPENVINS ON-MANIFOLD EKF IS STARTING\n");
     printf("=======================================\n");
 
-<<<<<<< HEAD
-
-
-
-VioManager::VioManager() {
-
-
-    //===================================================================================
-    //===================================================================================
-    //===================================================================================
-
-    // Load our state options
-    StateOptions state_options;
-	state_options.do_fej = false; // use_fej
-    state_options.imu_avg = false; //use_imuavg
-	state_options.use_rk4_integration = true; // use_rk4int
-	state_options.do_calib_camera_pose =  false; // calib_cam_extrinsics
-	state_options.do_calib_camera_intrinsics = false; // calib_cam_intrinsics
-	state_options.do_calib_camera_timeoffset = false; // calib_cam_timeoffset
-	state_options.max_clone_size = 11; // max_clones
-	state_options.max_slam_features = 0; // max_slam
-	state_options.max_aruco_features = 1024; // max_aruco
-	state_options.num_cameras = 2; // max_cameras
-	dt_statupdelay = 3; // dt_slam_delay
-
-    // Enforce that if we are doing stereo tracking, we have two cameras
-    if(state_options.num_cameras < 1) {
-        ROS_ERROR("VioManager(): Specified number of cameras needs to be greater than zero");
-        ROS_ERROR("VioManager(): num cameras = %d", state_options.num_cameras);
-        std::exit(EXIT_FAILURE);
-    }
-
-    // Read in what representation our feature is
-    std::string feat_rep_str;
-	feat_rep_str = "GLOBAL_3D"; // feat_representation
-    std::transform(feat_rep_str.begin(), feat_rep_str.end(),feat_rep_str.begin(), ::toupper);
-
-    // Set what representation we should be using
-    if(feat_rep_str == "GLOBAL_3D") state_options.feat_representation = FeatureRepresentation::Representation::GLOBAL_3D;
-    else if(feat_rep_str == "GLOBAL_FULL_INVERSE_DEPTH") state_options.feat_representation = FeatureRepresentation::Representation::GLOBAL_FULL_INVERSE_DEPTH;
-    else if(feat_rep_str == "ANCHORED_3D") state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_3D;
-    else if(feat_rep_str == "ANCHORED_FULL_INVERSE_DEPTH") state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_FULL_INVERSE_DEPTH;
-    else if(feat_rep_str == "ANCHORED_MSCKF_INVERSE_DEPTH") state_options.feat_representation = FeatureRepresentation::Representation::ANCHORED_MSCKF_INVERSE_DEPTH;
-    else {
-        ROS_ERROR("VioManager(): invalid feature representation specified = %s", feat_rep_str.c_str());
-        ROS_ERROR("VioManager(): the valid types are:");
-        ROS_ERROR("\t- GLOBAL_3D");
-        ROS_ERROR("\t- GLOBAL_FULL_INVERSE_DEPTH");
-        ROS_ERROR("\t- ANCHORED_3D");
-        ROS_ERROR("\t- ANCHORED_FULL_INVERSE_DEPTH");
-        ROS_ERROR("\t- ANCHORED_MSCKF_INVERSE_DEPTH");
-        std::exit(EXIT_FAILURE);
-    }
-=======
         this->params = params_;
     params.print_estimator();
     params.print_noise();
     params.print_state();
     params.print_trackers();
->>>>>>> 2b2372e9ff
 
     // Create the state!!
     state = new State(params.state_options);
 
     // Timeoffset from camera to IMU
-<<<<<<< HEAD
-    double calib_camimu_dt;
-	calib_camimu_dt = 0.0; // calib_camimu_dt
-    Eigen::VectorXd temp_camimu_dt;
-    temp_camimu_dt.resize(1);
-    temp_camimu_dt(0) = calib_camimu_dt;
-    state->calib_dt_CAMtoIMU()->set_value(temp_camimu_dt);
-    state->calib_dt_CAMtoIMU()->set_fej(temp_camimu_dt);
-
-    // Global gravity
-    Eigen::Matrix<double,3,1> gravity;
-    std::vector<double> vec_gravity;
-    std::vector<double> vec_gravity_default = {0.0,0.0,9.81};
-	vec_gravity = vec_gravity_default; // gravity
-    gravity << vec_gravity.at(0),vec_gravity.at(1),vec_gravity.at(2);
-
-    // Debug, print to the console!
-    ROS_INFO("FILTER PARAMETERS:");
-    ROS_INFO("\t- do fej: %d", state_options.do_fej);
-    ROS_INFO("\t- do imu avg: %d", state_options.imu_avg);
-    ROS_INFO("\t- calibrate cam to imu: %d", state_options.do_calib_camera_pose);
-    ROS_INFO("\t- calibrate cam intrinsics: %d", state_options.do_calib_camera_intrinsics);
-    ROS_INFO("\t- calibrate cam imu timeoff: %d", state_options.do_calib_camera_timeoffset);
-    ROS_INFO("\t- max clones: %d", state_options.max_clone_size);
-    ROS_INFO("\t- max slam: %d", state_options.max_slam_features);
-    ROS_INFO("\t- max aruco: %d", state_options.max_aruco_features);
-    ROS_INFO("\t- max cameras: %d", state_options.num_cameras);
-    ROS_INFO("\t- slam startup delay: %.1f", dt_statupdelay);
-    ROS_INFO("\t- feature representation: %s", feat_rep_str.c_str());
-
-
-    // Debug print initial values our state use
-    ROS_INFO("STATE INIT VALUES:");
-    ROS_INFO("\t- calib_camimu_dt: %.4f", calib_camimu_dt);
-    ROS_INFO("\t- gravity: %.3f, %.3f, %.3f", vec_gravity.at(0), vec_gravity.at(1), vec_gravity.at(2));
-
-
-    //===================================================================================
-    //===================================================================================
-    //===================================================================================
-
-    // Debug message
-    ROS_INFO("=====================================");
-    ROS_INFO("CAMERA PARAMETERS:");
-=======
     Eigen::VectorXd temp_camimu_dt;
     temp_camimu_dt.resize(1);
     temp_camimu_dt(0) = params.calib_camimu_dt;
     state->_calib_dt_CAMtoIMU->set_value(temp_camimu_dt);
     state->_calib_dt_CAMtoIMU->set_fej(temp_camimu_dt);
->>>>>>> 2b2372e9ff
 
     // Loop through through, and load each of the cameras
     for(int i=0; i<state->_options.num_cameras; i++) {
 
         // If our distortions are fisheye or not!
-<<<<<<< HEAD
-        bool is_fisheye;
-		is_fisheye = false; // cami_is_fisheye
-        state->get_model_CAM(i) = is_fisheye;
-
-        // If the desired fov we should simulate
-        std::vector<int> matrix_wh;
-        std::vector<int> matrix_wd_default = {752,480};
-		matrix_wh = matrix_wd_default; // cami_wh
-        std::pair<int,int> wh(matrix_wh.at(0),matrix_wh.at(1));
-
-        // Camera intrinsic properties
-        Eigen::Matrix<double,8,1> cam_calib;
-		if (i==0) {
-			std::vector<double> matrix_k, matrix_d;
-			std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
-			std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
-			matrix_k = matrix_k_default; // cami_k
-			matrix_d = matrix_d_default; // cami_d
-			cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
-		} else if (i==1) {
-			std::vector<double> matrix_k, matrix_d;
-			std::vector<double> matrix_k_default = {457.587,456.134,379.999,255.238};
-			std::vector<double> matrix_d_default = {-0.28368365,0.07451284,-0.00010473,-3.55590700e-05};
-			matrix_k = matrix_k_default; // cami_k
-			matrix_d = matrix_d_default; // cami_d
-			cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
-		} else {
-			std::vector<double> matrix_k, matrix_d;
-			std::vector<double> matrix_k_default = {458.654,457.296,367.215,248.375};
-			std::vector<double> matrix_d_default = {-0.28340811,0.07395907,0.00019359,1.76187114e-05};
-			matrix_k = matrix_k_default; // cami_k
-			matrix_d = matrix_d_default; // cami_d
-			cam_calib << matrix_k.at(0),matrix_k.at(1),matrix_k.at(2),matrix_k.at(3),matrix_d.at(0),matrix_d.at(1),matrix_d.at(2),matrix_d.at(3);
-		}
-
-        // Save this representation in our state
-        state->get_intrinsics_CAM(i)->set_value(cam_calib);
-        state->get_intrinsics_CAM(i)->set_fej(cam_calib);
-
-        // Our camera extrinsics transform
-        Eigen::Matrix4d T_CtoI;
-        std::vector<double> matrix_TCtoI;
-		std::vector<double> matrix_TtoI_default = {1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
-        std::vector<double> matrix_TtoI_default_1 = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975, 0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768, -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949, 0.0, 0.0, 0.0, 1.0};
-		std::vector<double> matrix_TtoI_default_2 = {0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556, 0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024, -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038, 0.0, 0.0, 0.0, 1.0};
-
-        // Read in from ROS, and save into our eigen mat
-		if (i==0) {
-			matrix_TCtoI = matrix_TtoI_default_1; // T_CitoI
-		} else if (i == 1) {
-			matrix_TCtoI = matrix_TtoI_default_2; // T_CitoI
-		} else {
-			matrix_TCtoI = matrix_TtoI_default; // T_CitoI
-		}
-
-		T_CtoI << matrix_TCtoI.at(0),matrix_TCtoI.at(1),matrix_TCtoI.at(2),matrix_TCtoI.at(3),
-                matrix_TCtoI.at(4),matrix_TCtoI.at(5),matrix_TCtoI.at(6),matrix_TCtoI.at(7),
-                matrix_TCtoI.at(8),matrix_TCtoI.at(9),matrix_TCtoI.at(10),matrix_TCtoI.at(11),
-                matrix_TCtoI.at(12),matrix_TCtoI.at(13),matrix_TCtoI.at(14),matrix_TCtoI.at(15);
-
-        // Load these into our state
-        Eigen::Matrix<double,7,1> cam_eigen;
-        cam_eigen.block(0,0,4,1) = rot_2_quat(T_CtoI.block(0,0,3,3).transpose());
-        cam_eigen.block(4,0,3,1) = -T_CtoI.block(0,0,3,3).transpose()*T_CtoI.block(0,3,3,1);
-        state->get_calib_IMUtoCAM(i)->set_value(cam_eigen);
-        state->get_calib_IMUtoCAM(i)->set_fej(cam_eigen);
-
-        // Append to our maps for our feature trackers
-        camera_fisheye.insert({i,is_fisheye});
-        camera_calib.insert({i,cam_calib});
-        camera_wh.insert({i,wh});
-
-        // Debug printing
-        cout << "cam_" << i << "wh:" << endl << wh.first << " x " << wh.second << endl;
-        cout << "cam_" << i << "K:" << endl << cam_calib.block(0,0,4,1).transpose() << endl;
-        cout << "cam_" << i << "d:" << endl << cam_calib.block(4,0,4,1).transpose() << endl;
-        cout << "T_C" << i << "toI:" << endl << T_CtoI << endl << endl;
-
-    }
-
-    // Debug message
-    ROS_INFO("=====================================");
-
-    //===================================================================================
-    //===================================================================================
-    //===================================================================================
-
-    // Load config values for our feature initializer
-    FeatureInitializerOptions featinit_options;
-	featinit_options.max_runs = 20; // fi_max_runs
-	featinit_options.init_lamda = 1e-3; // fi_init_lamda
-	featinit_options.max_lamda = 1e10; // fi_max_lamda
-	featinit_options.min_dx = 1e-6; // fi_min_dx
-	featinit_options.min_dcost = 1e-6; // fi_min_dcost
-	featinit_options.lam_mult = 10; // fi_lam_mult
-	featinit_options.min_dist = 0.25; // fi_min_dist
-	featinit_options.max_dist = 40; // fi_max_dist
-	featinit_options.max_baseline = 40; // fi_max_baseline
-	featinit_options.max_cond_number = 1000; // fi_max_cond_number
-
-    // Debug, print to the console!
-    ROS_INFO("FEATURE INITIALIZER PARAMETERS:");
-    ROS_INFO("\t- max runs: %d", featinit_options.max_runs);
-    ROS_INFO("\t- init lambda: %e", featinit_options.init_lamda);
-    ROS_INFO("\t- max lambda: %.4f", featinit_options.max_lamda);
-    ROS_INFO("\t- min final dx: %.4f", featinit_options.min_dx);
-    ROS_INFO("\t- min delta cost: %.4f", featinit_options.min_dcost);
-    ROS_INFO("\t- lambda multiple: %.4f", featinit_options.lam_mult);
-    ROS_INFO("\t- closest feature dist: %.4f", featinit_options.min_dist);
-    ROS_INFO("\t- furthest feature dist: %.4f", featinit_options.max_dist);
-    ROS_INFO("\t- max baseline ratio: %.4f", featinit_options.max_baseline);
-    ROS_INFO("\t- max condition number: %.4f", featinit_options.max_cond_number);
-
-    // Parameters for our extractor
-    int num_pts, fast_threshold, grid_x, grid_y, min_px_dist;
-    double knn_ratio;
-    bool use_klt, use_aruco, do_downsizing;
-	use_klt = true; // use_klt
-	//use_klt = false; // dont use_klt
-	use_aruco = false; // use_aruco
-	num_pts = 400; // num_pts
-	fast_threshold = 10; // fast_threshold
-	grid_x = 5; // grid_x
-	grid_y = 3; // grid_y
-	min_px_dist = 10; // min_px_dist
-	knn_ratio = 0.85; // knn_ratio
-	do_downsizing = true; // downsize_aruco
-
-    // Debug, print to the console!
-    ROS_INFO("TRACKING PARAMETERS:");
-    ROS_INFO("\t- use klt: %d", use_klt);
-    ROS_INFO("\t- use aruco: %d", use_aruco);
-    ROS_INFO("\t- max track features: %d", num_pts);
-    ROS_INFO("\t- max aruco tags: %d", state->options().max_aruco_features);
-    ROS_INFO("\t- grid size: %d x %d", grid_x, grid_y);
-    ROS_INFO("\t- fast threshold: %d", fast_threshold);
-    ROS_INFO("\t- min pixel distance: %d", min_px_dist);
-    ROS_INFO("\t- downsize aruco image: %d", do_downsizing);
-=======
         state->_cam_intrinsics_model.at(i) = params.camera_fisheye.at(i);
 
         // Camera intrinsic properties
@@ -304,7 +63,6 @@ VioManager::VioManager() {
         // Our camera extrinsic transform
         state->_calib_IMUtoCAM.at(i)->set_value(params.camera_extrinsics.at(i));
         state->_calib_IMUtoCAM.at(i)->set_fej(params.camera_extrinsics.at(i));
->>>>>>> 2b2372e9ff
 
     }
 
@@ -312,55 +70,6 @@ VioManager::VioManager() {
     //===================================================================================
     //===================================================================================
 
-<<<<<<< HEAD
-    // Our noise values for inertial sensor
-    Propagator::NoiseManager imu_noises;
-	imu_noises.sigma_w = 1.6968e-04; // gyroscope_noise_density
-	imu_noises.sigma_a = 2.0000e-3; // accelerometer_noise_density
-	imu_noises.sigma_wb = 1.9393e-05; // gyroscope_random_walk
-	imu_noises.sigma_ab = 3.0000e-03; // accelerometer_random_walk
-
-
-    // Debug print out
-    ROS_INFO("PROPAGATOR NOISES:");
-    ROS_INFO("\t- sigma_w: %.4f", imu_noises.sigma_w);
-    ROS_INFO("\t- sigma_a: %.4f", imu_noises.sigma_a);
-    ROS_INFO("\t- sigma_wb: %.4f", imu_noises.sigma_wb);
-    ROS_INFO("\t- sigma_ab: %.4f", imu_noises.sigma_ab);
-
-    // Load inertial state initialize parameters
-    double init_window_time, init_imu_thresh;
-	init_window_time = 0.5; // init_window_time
-	init_imu_thresh = 1.0; // init_imu_thresh
-
-    // Debug print out
-    ROS_INFO("INITIALIZATION PARAMETERS:");
-    ROS_INFO("\t- init_window_time: %.4f", init_window_time);
-    ROS_INFO("\t- init_imu_thresh: %.4f", init_imu_thresh);
-
-
-    // Read in update parameters
-    UpdaterOptions msckf_options;
-    UpdaterOptions slam_options;
-    UpdaterOptions aruco_options;
-	msckf_options.sigma_pix = 1; // up_msckf_sigma_px
-	msckf_options.chi2_multipler = 1; // up_msckf_chi2_multipler
-	slam_options.sigma_pix = 1; // up_slam_sigma_px
-	slam_options.chi2_multipler = 5; // up_slam_chi2_multipler
-	aruco_options.sigma_pix = 1; // up_aruco_sigma_px
-	aruco_options.chi2_multipler = 5; // up_aruco_chi2_multipler
-
-    // If downsampling aruco, then double our noise values
-    aruco_options.sigma_pix = (do_downsizing) ? 2*aruco_options.sigma_pix : aruco_options.sigma_pix;
-
-    ROS_INFO("MSCKFUPDATER PARAMETERS:");
-    ROS_INFO("\t- sigma_pxmsckf: %.4f", msckf_options.sigma_pix);
-    ROS_INFO("\t- sigma_pxslam: %.4f", slam_options.sigma_pix);
-    ROS_INFO("\t- sigma_pxaruco: %.4f", aruco_options.sigma_pix);
-    ROS_INFO("\t- chi2_multipler msckf: %d", msckf_options.chi2_multipler);
-    ROS_INFO("\t- chi2_multipler slam: %d", slam_options.chi2_multipler);
-    ROS_INFO("\t- chi2_multipler aruco: %d", aruco_options.chi2_multipler);
-=======
     // If we are recording statistics, then open our file
     if(params.record_timing_information) {
         // If the file exists, then delete it
@@ -380,7 +89,6 @@ VioManager::VioManager() {
         }
         of_statistics << "marginalization,total" << std::endl;
     }
->>>>>>> 2b2372e9ff
 
 
     //===================================================================================
@@ -410,19 +118,8 @@ VioManager::VioManager() {
     initializer = new InertialInitializer(params.gravity,params.init_window_time,params.init_imu_thresh);
 
     // Make the updater!
-<<<<<<< HEAD
-    updaterMSCKF = new UpdaterMSCKF(msckf_options, featinit_options);
-    updaterSLAM = new UpdaterSLAM(slam_options, aruco_options, featinit_options);
-
-    total_images = 0;
-    counted_images = 0;
-    total_tracking_time = 0.0;
-    total_filter_time = 0.0;
-    total_frame_time = 0.0;
-=======
     updaterMSCKF = new UpdaterMSCKF(params.msckf_options,params.featinit_options);
     updaterSLAM = new UpdaterSLAM(params.slam_options,params.aruco_options,params.featinit_options);
->>>>>>> 2b2372e9ff
 }
 
 
@@ -543,35 +240,20 @@ void VioManager::feed_measurement_simulation(double timestamp, const std::vector
 
 
 bool VioManager::try_to_initialize() {
-<<<<<<< HEAD
-        // Returns from our initializer
-        double time0;
-        Eigen::Matrix<double, 4, 1> q_GtoI0;
-        Eigen::Matrix<double, 3, 1> b_w0, v_I0inG, b_a0, p_I0inG;
-=======
 
     // Returns from our initializer
     double time0;
     Eigen::Matrix<double, 4, 1> q_GtoI0;
     Eigen::Matrix<double, 3, 1> b_w0, v_I0inG, b_a0, p_I0inG;
->>>>>>> 2b2372e9ff
 
     // Try to initialize the system
     bool success = initializer->initialize_with_imu(time0, q_GtoI0, b_w0, v_I0inG, b_a0, p_I0inG);
 
-<<<<<<< HEAD
-        // Return if it failed
-        if (!success) {
-			cout << "FAIL!!!!!!!!!" << endl;
-            return false;
-        }
-=======
     // Return if it failed
     if (!success) {
         std::cout << "NOT ENOUGH POINTS -- Tracking failed" << std::endl;
         return false;
     }
->>>>>>> 2b2372e9ff
 
     // Make big vector (q,p,v,bg,ba), and update our state
     // Note: start from zero position, as this is what our covariance is based off of
@@ -606,6 +288,7 @@ bool VioManager::try_to_initialize() {
 
 
 void VioManager::do_feature_propagate_update(double timestamp) {
+
 
     //===================================================================================
     // State propagation, and clone augmentation
@@ -834,51 +517,11 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     }
     rT7 =  boost::posix_time::microsec_clock::local_time();
 
-    total_images++;
-    double frame_time = (rT6 - rT1).total_microseconds() * 1e-3;
-    double tracking_time = (rT2 - rT1).total_microseconds() * 1e-3;
-    double filter_time = (rT6 - rT2).total_microseconds() * 1e-3;
-
-    if (total_images >= 100) {
-        counted_images++;
-        total_tracking_time += tracking_time;
-        total_filter_time += filter_time;
-        total_frame_time += frame_time;
-
-        frame_tracking_time.push_back(tracking_time);
-        frame_filter_time.push_back(filter_time);
-        frame_total_time.push_back(frame_time);
-
-        //cout << "Total time = " << total_time << " ms\n";
-        //cout << "Total images = " << total_images << "\n";
-        //cout << "Average time per frame = " << total_time / (double) total_images << " ms\n";
-        //cout << "Number of OpenCV threads = " << cv::getNumThreads() << "\n";
-    }
 
     //===================================================================================
     // Debug info, and stats tracking
     //===================================================================================
 
-<<<<<<< HEAD
-    // Frame time
-    ROS_INFO("\u001b[34m[TIME]: %.4f ms for tracking\u001b[0m", tracking_time);
-    ROS_INFO("\u001b[34m[TIME]: %.4f ms for filter\u001b[0m", filter_time);
-    ROS_INFO("\u001b[34m[TIME]: %.4f ms for total\u001b[0m", frame_time);
-
-    //// Average time
-    ROS_INFO("\u001b[34m[AVERAGE TIME]: %.4f ms for tracking\u001b[0m", total_tracking_time / (double) counted_images);
-    ROS_INFO("\u001b[34m[AVERAGE TIME]: %.4f ms for filter\u001b[0m", total_filter_time / (double) counted_images);
-    ROS_INFO("\u001b[34m[AVERAGE TIME]: %.4f ms for total\u001b[0m", total_frame_time / (double) counted_images);
-
-    cout << "----\n";
-
-    // Timing information
-    ROS_INFO("\u001b[34m[TIME]: %.4f seconds for propagation\u001b[0m",(rT3-rT2).total_microseconds() * 1e-6);
-    ROS_INFO("\u001b[34m[TIME]: %.4f seconds for MSCKF update (%d features)\u001b[0m",(rT4-rT3).total_microseconds() * 1e-6, (int)good_features_MSCKF.size());
-    if(state->options().max_slam_features > 0)
-        ROS_INFO("\u001b[34m[TIME]: %.4f seconds for SLAM update (%d delayed, %d update)\u001b[0m",(rT5-rT4).total_microseconds() * 1e-6, (int)feats_slam_UPDATE.size(), (int)feats_slam_DELAYED.size());
-    ROS_INFO("\u001b[34m[TIME]: %.4f seconds for marginalization (%d clones in state)\u001b[0m",(rT6-rT5).total_microseconds() * 1e-6, (int)state->n_clones());
-=======
     // Get timing statitics information
     double time_track = (rT2-rT1).total_microseconds() * 1e-6;
     double time_prop = (rT3-rT2).total_microseconds() * 1e-6;
@@ -916,7 +559,6 @@ void VioManager::do_feature_propagate_update(double timestamp) {
         of_statistics << time_marg << "," << time_total << std::endl;
         of_statistics.flush();
     }
->>>>>>> 2b2372e9ff
 
 
     // Update our distance traveled
@@ -927,21 +569,12 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     timelastupdate = timestamp;
 
     // Debug, print our current state
-<<<<<<< HEAD
-    //ROS_INFO("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)",
-    //        state->imu()->quat()(0),state->imu()->quat()(1),state->imu()->quat()(2),state->imu()->quat()(3),
-    //        state->imu()->pos()(0),state->imu()->pos()(1),state->imu()->pos()(2),distance);
-    //ROS_INFO("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f",
-    //         state->imu()->bias_g()(0),state->imu()->bias_g()(1),state->imu()->bias_g()(2),
-    //         state->imu()->bias_a()(0),state->imu()->bias_a()(1),state->imu()->bias_a()(2));
-=======
     printf("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
             state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3),
             state->_imu->pos()(0),state->_imu->pos()(1),state->_imu->pos()(2),distance);
     printf("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
              state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2),
              state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
->>>>>>> 2b2372e9ff
 
 
     // Debug for camera imu offset
