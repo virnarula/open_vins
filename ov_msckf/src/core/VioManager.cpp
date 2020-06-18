@@ -175,8 +175,8 @@ void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Ma
     if(params.use_stereo) {
         trackFEATS->feed_stereo(timestamp, img0, img1, cam_id0, cam_id1);
     } else {
-        std::thread t_l = timed_thread("open_vins", &TrackBase::feed_monocular, trackFEATS, boost::ref(timestamp), boost::ref(img0), boost::ref(cam_id0));
-        std::thread t_r = timed_thread("open_vins", &TrackBase::feed_monocular, trackFEATS, boost::ref(timestamp), boost::ref(img1), boost::ref(cam_id1));
+        std::thread t_l = timed_thread("open_vins_feed_monocular", &TrackBase::feed_monocular, trackFEATS, boost::ref(timestamp), boost::ref(img0), boost::ref(cam_id0));
+        std::thread t_r = timed_thread("open_vins_feed_monocular", &TrackBase::feed_monocular, trackFEATS, boost::ref(timestamp), boost::ref(img1), boost::ref(cam_id1));
         t_l.join();
         t_r.join();
     }
