@@ -71,7 +71,9 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
 
     // Return if both of these failed
     if(window_newest.empty() || window_secondnew.empty()) {
-        //printf(YELLOW "InertialInitializer::initialize_with_imu(): unable to select window of IMU readings, not enough readings\n" RESET);
+#ifndef DNDEBUG
+        printf(YELLOW "InertialInitializer::initialize_with_imu(): unable to select window of IMU readings, not enough readings\n" RESET);
+#endif
         return false;
     }
 
@@ -89,7 +91,9 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
 
     // If it is below the threshold just return
     if(a_var < _imu_excite_threshold) {
+#ifndef DNDBEG
         printf(YELLOW "InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold %.4f < %.4f\n" RESET,a_var,_imu_excite_threshold);
+#endif
         return false;
     }
 

@@ -110,16 +110,17 @@ VioManagerOptions create_params()
 class slam2 : public plugin {
 public:
 	/* Provide handles to slam2 */
-	slam2(const phonebook *pb)
-		: sb{pb->lookup_impl<switchboard>()}
+	slam2(std::string name_, const phonebook* pb_)
+		: plugin{name_, pb_}
 		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
 		, _m_begin{std::chrono::system_clock::now()}
+		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
 	{ }
 
 
 	virtual void start() override {
-		sb->schedule<imu_cam_type>("imu_cam", std::bind(&slam2::feed_imu_cam, this, std::placeholders::_1));
+		sb->schedule<imu_cam_type>(get_name(), "imu_cam", std::bind(&slam2::feed_imu_cam, this, std::placeholders::_1));
 	}
 
 
@@ -139,9 +140,9 @@ public:
 		       previous_dataset_time = datum->dataset_time;
 
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
-		assert(false
+		assert(
 			   // either both have value
-			   || ( datum->img0 &&  datum->img1)
+			   ( datum->img0 &&  datum->img1)
 			   // or neither do
 			   || (!datum->img0 && !datum->img1)
 		);

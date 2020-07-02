@@ -13,7 +13,14 @@ plugin.dbg.so:
 
 .PHONY: plugin.opt.so
 plugin.opt.so:
-	$(error "This plugin does not yet support an optimized build")
+	mkdir -p build/ && \
+	cd build/ && \
+	cmake -DDNDEBUG=1 -DCMAKE_BUILD_TYPE=Release .. && \
+	make "-j$(nproc)" && \
+	cd .. && \
+	rm -f  plugin.opt.so && \
+	ln -s build/ov_msckf/libslam2.so plugin.opt.so && \
+	true
 
 .PHONY: clean
 clean:
