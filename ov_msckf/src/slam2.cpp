@@ -110,11 +110,11 @@ VioManagerOptions create_params()
 class slam2 : public plugin {
 public:
 	/* Provide handles to slam2 */
-	slam2(std::string name_, const phonebook* pb_)
+	slam2(std::string name_, phonebook* pb_)
 		: plugin{name_, pb_}
+		, sb{pb->lookup_impl<switchboard>()}
 		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
 		, _m_begin{std::chrono::system_clock::now()}
-		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
 	{ }
 
