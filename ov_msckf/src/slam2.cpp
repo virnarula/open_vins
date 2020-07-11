@@ -23,12 +23,13 @@ VioManagerOptions create_params()
 
 	// Camera #1
 	Eigen::Matrix<double, 8, 1> intrinsics_0;
-	intrinsics_0 << 458.654, 457.296, 367.215, 248.375, -0.28340811, 0.07395907, 0.00019359, 1.76187114e-05;
+	intrinsics_0 << 339.99, 339.99, 322.06, 207.483, 0, 0, 0, 0;
 
     Eigen::Matrix4d T_CtoI_0;
-	std::vector<double> matrix_TCtoI_0 = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
-            0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
-            -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
+		std::vector<double> matrix_TCtoI_0 =
+					 {-0.01080233, 0.00183858, 0.99993996, 0.01220425,
+            -0.99993288, -0.00420947, -0.01079452, 0.0146056,
+            0.00418937, -0.99998945, 0.00188393, -0.00113692,
             0.0, 0.0, 0.0, 1.0};
 
 	T_CtoI_0 << matrix_TCtoI_0.at(0), matrix_TCtoI_0.at(1), matrix_TCtoI_0.at(2), matrix_TCtoI_0.at(3),
@@ -44,16 +45,17 @@ VioManagerOptions create_params()
 	params.camera_fisheye.insert({0, false});
 	params.camera_intrinsics.insert({0, intrinsics_0});
 	params.camera_extrinsics.insert({0, extrinsics_0});
-	params.camera_wh.insert({0, {752, 480}});
+	params.camera_wh.insert({0, {672, 376}});
 
 	// Camera #2
 	Eigen::Matrix<double, 8, 1> intrinsics_1;
-	intrinsics_1 << 457.587, 456.134, 379.999, 255.238, -0.28368365, 0.07451284, -0.00010473, -3.55590700e-05;
+	intrinsics_1 << 339.99, 339.99, 322.06, 207.483, 0, 0, 0, 0;
 
     Eigen::Matrix4d T_CtoI_1;
-	std::vector<double> matrix_TCtoI_1 = {0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
-            0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024,
-            -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038,
+		std::vector<double> matrix_TCtoI_1 =
+					 {-0.01043535, -0.00191061, 0.99994372, 0.01190459,
+            -0.99993668, -0.00419281, -0.01044329, -0.04732387,
+            0.00421252, -0.99998938, -0.00186674, -0.00098799,
             0.0, 0.0, 0.0, 1.0};
 
 	T_CtoI_1 << matrix_TCtoI_1.at(0), matrix_TCtoI_1.at(1), matrix_TCtoI_1.at(2), matrix_TCtoI_1.at(3),
@@ -69,40 +71,53 @@ VioManagerOptions create_params()
 	params.camera_fisheye.insert({1, false});
 	params.camera_intrinsics.insert({1, intrinsics_1});
 	params.camera_extrinsics.insert({1, extrinsics_1});
-	params.camera_wh.insert({1, {752, 480}});
+	params.camera_wh.insert({1, {672, 376}});
 
-	// params.state_options.max_slam_features = 0;
-	params.state_options.num_cameras = 2;
-	params.init_window_time = 0.75;
-	params.init_imu_thresh = 1.5;
-	params.fast_threshold = 15;
-	params.grid_x = 5;
-	params.grid_y = 3;
-	params.num_pts = 150;
-	params.msckf_options.chi2_multipler = 1;
-	params.knn_ratio = .7;
-
-	params.state_options.imu_avg = true;
 	params.state_options.do_fej = true;
+	params.state_options.imu_avg = false;
 	params.state_options.use_rk4_integration = true;
 	params.use_stereo = true;
-	params.state_options.do_calib_camera_pose = true;
 	params.state_options.do_calib_camera_intrinsics = true;
 	params.state_options.do_calib_camera_timeoffset = true;
+	params.calib_camimu_dt = 0; // was 0
+	params.state_options.max_clone_size = 11;
+	params.state_options.max_slam_features = 75; // was 25
+	params.state_options.max_slam_in_update = 25; // was 25
+	params.state_options.max_msckf_in_update = 999; // was 999
+	params.state_options.num_cameras = 2;
+	params.dt_slam_delay = 3; // was 3
+	params.init_window_time = 0.75;
+	params.init_imu_thresh = 0.05;
+	params.gravity = {0, 0, 9.81};
+	params.state_options.feat_rep_msckf = LandmarkRepresentation::from_string("GLOBAL_3D");
+	params.state_options.feat_rep_slam = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
+	params.state_options.feat_rep_aruco = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
+	// params.sim_freq_imu = 790;
+	// params.sim_freq_cam = 50;
 
-	params.dt_slam_delay = 3.0;
-	params.state_options.max_slam_features = 50;
-	params.state_options.max_slam_in_update = 25;
-	params.state_options.max_msckf_in_update = 999;
-
-	params.slam_options.chi2_multipler = 1;
-	params.slam_options.sigma_pix = 1;
+	params.use_klt = true;
+	params.num_pts = 250;
+	params.fast_threshold = 15;
+	params.grid_x = 5;
+	params.grid_y = 5;
+	params.min_px_dist = 10;
+	params.knn_ratio = 0.80;
+	// params.downsample_cameras = false;
 
 	params.use_aruco = false;
+	// params.numaruco = 1024;
+	params.downsize_aruco = true;
 
-	params.state_options.feat_rep_slam = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
-    params.state_options.feat_rep_aruco = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
-
+	params.msckf_options.sigma_pix = 5;
+	params.msckf_options.chi2_multipler = 2;
+	params.slam_options.sigma_pix = 5;
+	params.slam_options.chi2_multipler = 2;
+	params.aruco_options.sigma_pix = 5;
+	params.aruco_options.chi2_multipler = 1;
+	params.imu_noises.sigma_a = 0.403011031507; // accelerometer noise: 0.403011031507 (github issue), 0.0018 (from ZED, delay in debug)
+	params.imu_noises.sigma_ab = 0.00072014; // accelorometer random walk: 0.00072014 (github issue), 0.0006435 (from ZED, delay in debug)
+	params.imu_noises.sigma_w = 0.323378786016; // gyroscope noise: 0.323378786016 (github issue), 0.007 * (M_PI / 180) (from ZED, delay in debug)
+	params.imu_noises.sigma_wb = 1.9393e-05; // gyroscope random walk:  1.9393e-05 (github issue), 0.0019825 * (M_PI / 180) (from ZED, delay in debug)
 
 	return params;
 }
@@ -137,7 +152,7 @@ public:
 			return;
 		}
 
-		// This ensures that every data point is coming in chronological order If youre failing this assert, 
+		// This ensures that every data point is coming in chronological order If youre failing this assert,
 		// make sure that your data folder matches the name in offline_imu_cam/plugin.cc
 		double timestamp_in_seconds = (double(datum->dataset_time) / NANO_SEC);
 		assert(timestamp_in_seconds > previous_timestamp);
@@ -147,7 +162,7 @@ public:
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
 
-		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
+		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " <<
 		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
 		// 	datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
 
@@ -158,7 +173,7 @@ public:
 			imu_cam_buffer = datum;
 			return;
 		}
-		
+
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
