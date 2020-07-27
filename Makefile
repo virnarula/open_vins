@@ -1,10 +1,13 @@
 nproc=$(shell python3 -c 'import multiprocessing; print( max(multiprocessing.cpu_count() - 1, 1))')
 
+CC ?= clang
+CXX ?= clang++
+
 .PHONY: plugin.dbg.so
 plugin.dbg.so:
 	mkdir -p build/ && \
 	cd build/ && \
-	cmake .. && \
+	cmake .. -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) && \
 	make "-j$(nproc)" && \
 	cd .. && \
 	rm -f  plugin.dbg.so && \
