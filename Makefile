@@ -17,13 +17,13 @@ plugin.opt.so: build/Release/Makefile
 build/%/Makefile:
 	mkdir -p build/Debug && \
 	cd build/Debug && \
-	cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=${CC:clang} ../.. && \
+	cmake -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=${CXX:clang++-10} -DCMAKE_C_COMPILER=${CC:clang-10} ../.. && \
 	true
 
 build/Release/Makefile:
 	mkdir -p build/Release && \
 	cd build/Release && \
-	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=${CC:clang} ../.. && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${CXX:clang++-10} -DCMAKE_C_COMPILER=${CC:clang-10} ../.. && \
 	true
 
 .PHONY: clean
