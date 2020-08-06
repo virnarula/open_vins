@@ -1,5 +1,8 @@
 nproc=$(shell python3 -c 'import multiprocessing; print( max(multiprocessing.cpu_count() - 1, 1))')
 
+CXX ?= clang++-10
+CC ?= clang-10
+
 .PHONY: plugin.dbg.so
 plugin.dbg.so: build/Debug/Makefile
 	make -C build/Debug "-j$(nproc)" && \
@@ -17,13 +20,13 @@ plugin.opt.so: build/Release/Makefile
 build/%/Makefile:
 	mkdir -p build/Debug && \
 	cd build/Debug && \
-	cmake -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=${CXX:clang++-10} -DCMAKE_C_COMPILER=${CC:clang-10} ../.. && \
+	cmake -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_C_COMPILER=$(CC) ../.. && \
 	true
 
 build/Release/Makefile:
 	mkdir -p build/Release && \
 	cd build/Release && \
-	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${CXX:clang++-10} -DCMAKE_C_COMPILER=${CC:clang-10} ../.. && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_C_COMPILER=$(CC) ../.. && \
 	true
 
 .PHONY: clean
