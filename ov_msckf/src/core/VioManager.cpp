@@ -531,7 +531,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     double time_marg = (rT7-rT6).total_microseconds() * 1e-6;
     double time_total = (rT7-rT1).total_microseconds() * 1e-6;
 
-#ifndef DNDEBUG
+#ifndef NDEBUG
     // Timing information
     printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
     printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, time_prop);
@@ -570,7 +570,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     }
     timelastupdate = timestamp;
 
-#ifndef DNDEBUG
+#ifndef NDEBUG
     // Debug, print our current state
     printf("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
             state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3),
