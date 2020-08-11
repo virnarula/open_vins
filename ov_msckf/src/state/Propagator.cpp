@@ -116,7 +116,8 @@ void Propagator::propagate_and_clone(State* state, double timestamp) {
 
 
 
-void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus) {
+// We add an optional param because we want to do integration with interpolated IMU values past the available cam images
+void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, bool extend_integration = false) {
 
     // Set the last time offset value if we have just started the system up
     if(!have_last_prop_time_offset) {
@@ -131,6 +132,24 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
     double time0 = state->_timestamp+last_prop_time_offset;
     double time1 = timestamp+t_off_new;
     vector<IMUDATA> prop_data = Propagator::select_imu_readings(imu_data,time0,time1);
+
+    // If we want to predict past available camera frames, interpolate an IMU measurement using a constant acceleration
+    // model for a measurement at time1
+    if (extend_integration) {
+        IMUDATA last_valid_imu = prop_data.at(prop_data.size()-2);
+        IMUDATA second_last_valid_imu = prop_data.at(prop_data.size()-2);
+
+        Eigen::Matrix<double, 3, 1> wm_offset = (last_valid_imu.wm - second_last_valid_imu.wm) * 
+                                                (last_valid_imu.timestamp - second_last_valid_imu.timestamp) * 
+                                                (time1 - last_valid_imu.timestamp);
+
+        IMUDATA interpolated_measurement = {
+            time1,
+            last_valid_imu.wm + wm_offset,
+            last_valid_imu.am,
+        };
+        prop_data.push_back(interpolated_measurement);
+    }
 
     // Save the original IMU state
     Eigen::VectorXd orig_val = state->_imu->value();

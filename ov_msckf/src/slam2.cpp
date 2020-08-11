@@ -117,10 +117,13 @@ public:
 		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
 	{
-		pb->register_impl<pose_prediction>(new pose_prediction_impl(*this));
+		pb->register_impl<pose_prediction>(std::static_pointer_cast<pose_prediction>(
+			std::make_shared<pose_prediction_impl>(*this)
+		));
 		_m_pose = sb->publish<pose_type>("slow_pose");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
+		state = NULL;
 
 		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
 	}
@@ -168,7 +171,7 @@ public:
 		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
 
 		// Get the pose returned from SLAM
-		State *state = open_vins_estimator.get_state();
+		state = open_vins_estimator.get_state();
 		Eigen::Vector4d quat = state->_imu->quat();
 		Eigen::Vector3d pose = state->_imu->pos();
 
@@ -218,7 +221,7 @@ public:
 			, _m_true_pose{slam_reference.sb->subscribe_latest<pose_type>("true_pose")}
 			{}
 
-		virtual pose_type* get_true_pose() const override {
+		virtual pose_type get_true_pose() const override {
 			const pose_type* pose_ptr = _m_true_pose->get_latest_ro();
 			return correct_pose(
 				pose_ptr ? *pose_ptr : pose_type{}
@@ -226,7 +229,7 @@ public:
 		}
 
 		// No paramter pose predict will just get the current slow pose
-		virtual pose_type* get_fast_pose() const override {
+		virtual pose_type get_fast_pose() const override {
 		const pose_type* pose_ptr = _m_slow_pose->get_latest_ro();
 			return correct_pose(
 				pose_ptr ? *pose_ptr : pose_type{}
@@ -234,24 +237,28 @@ public:
 		}
 
 		// future_time: Timestamp in the future in seconds
-		virtual pose_type* get_fast_pose(double future_time) override {
+		virtual pose_type get_fast_pose(double future_time) const override {
 			if (!slam_ref.open_vins_estimator.initialized()) {
 				return get_fast_pose();
 			}
 
+			// We need to do this because OpenVINS will update the state object and since were using fake IMU
+			// values to get a "future" pose we dont want these fake values to interfere with predictions using real IMU values
+			State temp_state = State(*slam_ref.state);
+
 			 // Get fast propagate state at the desired timestamp
 			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
-			slam_ref.open_vins_estimator.get_propagator()->fast_state_propagate(slam_ref.state, future_time, state_plus);
+			slam_ref.open_vins_estimator.get_propagator()->fast_state_propagate(&temp_state, future_time, state_plus, true);
 
 			// The timestamp here has to be approximated using current system time. Also I dont think this time is
 			// used anywhere atm and should probably be cleaned up at some point
-			pose_type* fast_pose = new pose_type {
+			pose_type* pose_ptr = new pose_type {
 				std::chrono::system_clock::now() + std::chrono::seconds{static_cast<ullong>(future_time) - static_cast<ullong>(slam_ref.previous_timestamp)}, 
 				Eigen::Vector3f{static_cast<float>(state_plus(4)), static_cast<float>(state_plus(5)), static_cast<float>(state_plus(6))}, 
 				Eigen::Quaternionf{static_cast<float>(state_plus(3)), static_cast<float>(state_plus(0)), static_cast<float>(state_plus(1)), static_cast<float>(state_plus(2))}
 			};
 
-			return correct_pose(fast_pose);
+			return correct_pose(*pose_ptr);
 		}
 		
 		virtual void set_offset(const Eigen::Quaternionf& raw_o_times_offset) override {
@@ -330,26 +337,11 @@ public:
 		}
 	};
 
-	class pose_prediction_plugin : public plugin {
-	public:
-		pose_prediction_plugin(const std::string& name, phonebook* pb)
-			: plugin{name, pb}
-		{
-			pb->register_impl<pose_prediction>(
-				std::static_pointer_cast<pose_prediction>(
-					std::make_shared<pose_prediction_impl>(pb)
-				)
-			);
-		}
-	};
-
-	PLUGIN_MAIN(pose_prediction_plugin);
-
-
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	time_type _m_begin;
+	State *state;
 
 	VioManagerOptions manager_params = create_params();
 	VioManager open_vins_estimator;
