@@ -4,7 +4,7 @@ nproc=$(shell python3 -c 'import multiprocessing; print( max(multiprocessing.cpu
 plugin.dbg.so:
 	mkdir -p build/ && \
 	cd build/ && \
-	cmake .. && \
+	cmake .. -DCMAKE_CXX_COMPILER=clang++ && \
 	make "-j$(nproc)" && \
 	cd .. && \
 	rm -f  plugin.dbg.so && \

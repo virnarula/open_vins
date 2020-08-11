@@ -13,6 +13,8 @@
 #include "common/plugin.hpp"
 #include "common/switchboard.hpp"
 #include "common/data_format.hpp"
+#include "common/pose_prediction.hpp"
+#include "common/phonebook.hpp"
 
 using namespace ILLIXR;
 using namespace ov_msckf;
@@ -115,6 +117,7 @@ public:
 		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
 	{
+		pb->register_impl<pose_prediction>(new pose_prediction_impl(*this));
 		_m_pose = sb->publish<pose_type>("slow_pose");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
@@ -204,6 +207,143 @@ public:
 
 
 	virtual ~slam2() override {}
+
+	// This is defined here because Pose prediction needs access to open_vins_estimator
+	// object that is created and updated with new IMU/Cam values in Slam 
+	class pose_prediction_impl : public pose_prediction {
+	public:
+		pose_prediction_impl(slam2& slam_reference) 
+			: slam_ref{slam_reference}
+			, _m_slow_pose{slam_reference.sb->subscribe_latest<pose_type>("slow_pose")}
+			, _m_true_pose{slam_reference.sb->subscribe_latest<pose_type>("true_pose")}
+			{}
+
+		virtual pose_type* get_true_pose() const override {
+			const pose_type* pose_ptr = _m_true_pose->get_latest_ro();
+			return correct_pose(
+				pose_ptr ? *pose_ptr : pose_type{}
+			);
+		}
+
+		// No paramter pose predict will just get the current slow pose
+		virtual pose_type* get_fast_pose() const override {
+		const pose_type* pose_ptr = _m_slow_pose->get_latest_ro();
+			return correct_pose(
+				pose_ptr ? *pose_ptr : pose_type{}
+			);
+		}
+
+		// future_time: Timestamp in the future in seconds
+		virtual pose_type* get_fast_pose(double future_time) override {
+			if (!slam_ref.open_vins_estimator.initialized()) {
+				return get_fast_pose();
+			}
+
+			 // Get fast propagate state at the desired timestamp
+			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
+			slam_ref.open_vins_estimator.get_propagator()->fast_state_propagate(slam_ref.state, future_time, state_plus);
+
+			// The timestamp here has to be approximated using current system time. Also I dont think this time is
+			// used anywhere atm and should probably be cleaned up at some point
+			pose_type* fast_pose = new pose_type {
+				std::chrono::system_clock::now() + std::chrono::seconds{static_cast<ullong>(future_time) - static_cast<ullong>(slam_ref.previous_timestamp)}, 
+				Eigen::Vector3f{static_cast<float>(state_plus(4)), static_cast<float>(state_plus(5)), static_cast<float>(state_plus(6))}, 
+				Eigen::Quaternionf{static_cast<float>(state_plus(3)), static_cast<float>(state_plus(0)), static_cast<float>(state_plus(1)), static_cast<float>(state_plus(2))}
+			};
+
+			return correct_pose(fast_pose);
+		}
+		
+		virtual void set_offset(const Eigen::Quaternionf& raw_o_times_offset) override {
+			std::lock_guard<std::mutex> lock {offset_mutex};
+			Eigen::Quaternionf raw_o = raw_o_times_offset * offset.inverse();
+			std::cout << "pose_prediction: set_offset" << std::endl;
+			offset = raw_o.inverse();
+			/*
+			Now, `raw_o` is maps to the identity quaternion.
+
+			Proof:
+			apply_offset(raw_o)
+				= raw_o * offset
+				= raw_o * raw_o.inverse()
+				= Identity.
+			*/
+		}
+
+		Eigen::Quaternionf apply_offset(const Eigen::Quaternionf& orientation) const {
+			std::lock_guard<std::mutex> lock {offset_mutex};
+			return orientation * offset;
+		}
+
+
+		virtual bool fast_pose_reliable() const override {
+			//return _m_slow_pose.valid();
+			/*
+			SLAM takes some time to initialize, so initially fast_pose
+			is unreliable.
+
+			In such cases, we might return a fast_pose based only on the
+			IMU data (currently, we just return a zero-pose)., and mark
+			it as "unreliable"
+
+			This way, there always a pose coming out of pose_prediction,
+			representing our best guess at that time, and we indicate
+			how reliable that guess is here.
+
+			*/
+			return true;
+		}
+
+		virtual bool true_pose_reliable() const override {
+			//return _m_true_pose.valid();
+			/*
+			We do not have a "ground truth" available in all cases, such
+			as when reading live data.
+			*/
+			return true;
+		}
+
+	private:
+		slam2& slam_ref;
+		std::unique_ptr<reader_latest<pose_type>> _m_slow_pose;
+		std::unique_ptr<reader_latest<pose_type>> _m_true_pose;
+		Eigen::Quaternionf offset {Eigen::Quaternionf::Identity()};
+		mutable std::mutex offset_mutex;
+
+		pose_type correct_pose(const pose_type pose) const {
+			pose_type swapped_pose;
+
+			// This uses the OpenVINS standard output coordinate system.
+			// This is a mapping between the OV coordinate system and the OpenGL system.
+			swapped_pose.position.x() = -pose.position.y();
+			swapped_pose.position.y() = pose.position.z();
+			swapped_pose.position.z() = -pose.position.x();
+
+			// There is a slight issue with the orientations: basically,
+			// the output orientation acts as though the "top of the head" is the
+			// forward direction, and the "eye direction" is the up direction.
+			Eigen::Quaternionf raw_o (pose.orientation.w(), -pose.orientation.y(), pose.orientation.z(), -pose.orientation.x());
+
+			swapped_pose.orientation = apply_offset(raw_o);
+
+			return swapped_pose;
+		}
+	};
+
+	class pose_prediction_plugin : public plugin {
+	public:
+		pose_prediction_plugin(const std::string& name, phonebook* pb)
+			: plugin{name, pb}
+		{
+			pb->register_impl<pose_prediction>(
+				std::static_pointer_cast<pose_prediction>(
+					std::make_shared<pose_prediction_impl>(pb)
+				)
+			);
+		}
+	};
+
+	PLUGIN_MAIN(pose_prediction_plugin);
 
 
 private:
