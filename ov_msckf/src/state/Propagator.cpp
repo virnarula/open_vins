@@ -131,24 +131,44 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
     // First lets construct an IMU vector of measurements we need
     double time0 = state->_timestamp+last_prop_time_offset;
     double time1 = timestamp+t_off_new;
+    std::cout << time1 << std::endl;
     vector<IMUDATA> prop_data = Propagator::select_imu_readings(imu_data,time0,time1);
 
     // If we want to predict past available camera frames, interpolate an IMU measurement using a constant acceleration
     // model for a measurement at time1
     if (extend_integration) {
-        IMUDATA last_valid_imu = prop_data.at(prop_data.size()-2);
+
+        // Some some state on the last VALID IMU reading
+        IMUDATA last_valid_imu = prop_data.at(prop_data.size()-1);
         IMUDATA second_last_valid_imu = prop_data.at(prop_data.size()-2);
+        double imu_interval = last_valid_imu.timestamp - second_last_valid_imu.timestamp;
+        Eigen::Matrix<double, 3, 1> delta_wm = (last_valid_imu.wm - second_last_valid_imu.wm) * imu_interval;
 
-        Eigen::Matrix<double, 3, 1> wm_offset = (last_valid_imu.wm - second_last_valid_imu.wm) * 
-                                                (last_valid_imu.timestamp - second_last_valid_imu.timestamp) * 
-                                                (time1 - last_valid_imu.timestamp);
+        double time_counter = time1 - last_valid_imu.timestamp;
+        while (time_counter >= imu_interval) {
 
-        IMUDATA interpolated_measurement = {
-            time1,
-            last_valid_imu.wm + wm_offset,
-            last_valid_imu.am,
-        };
-        prop_data.push_back(interpolated_measurement);
+            // Get the last IMU mesasurement in the list
+            IMUDATA interpolated_measurement = {
+                prop_data.at(prop_data.size()-1).timestamp + imu_interval,
+                prop_data.at(prop_data.size()-1).wm + delta_wm,
+                last_valid_imu.am,
+            };
+            prop_data.push_back(interpolated_measurement);
+
+            time_counter -= imu_interval;
+        }
+
+        // If theres time left thats smaller than the IMU interval, scale the delta_wm down
+        if (time_counter > 0) {
+            delta_wm = (last_valid_imu.wm - second_last_valid_imu.wm) * (time_counter / imu_interval);
+
+            IMUDATA interpolated_measurement = {
+                prop_data.at(prop_data.size()-1).timestamp + imu_interval,
+                prop_data.at(prop_data.size()-1).wm + delta_wm,
+                last_valid_imu.am,
+            };
+            prop_data.push_back(interpolated_measurement);
+        }
     }
 
     // Save the original IMU state

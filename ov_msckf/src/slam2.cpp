@@ -121,6 +121,7 @@ public:
 			std::make_shared<pose_prediction_impl>(*this)
 		));
 		_m_pose = sb->publish<pose_type>("slow_pose");
+		// _m_ov_state = sb->publish<State>("ov_state");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 		state = NULL;
@@ -230,7 +231,7 @@ public:
 
 		// No paramter pose predict will just get the current slow pose
 		virtual pose_type get_fast_pose() const override {
-		const pose_type* pose_ptr = _m_slow_pose->get_latest_ro();
+			const pose_type* pose_ptr = _m_slow_pose->get_latest_ro();
 			return correct_pose(
 				pose_ptr ? *pose_ptr : pose_type{}
 			);
@@ -244,11 +245,11 @@ public:
 
 			// We need to do this because OpenVINS will update the state object and since were using fake IMU
 			// values to get a "future" pose we dont want these fake values to interfere with predictions using real IMU values
-			State temp_state = State(*slam_ref.state);
+			// State temp_state = State(*slam_ref.state);
 
-			 // Get fast propagate state at the desired timestamp
+			// Get fast propagate state at the desired timestamp
 			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
-			slam_ref.open_vins_estimator.get_propagator()->fast_state_propagate(&temp_state, future_time, state_plus, true);
+			slam_ref.open_vins_estimator.get_propagator()->fast_state_propagate(slam_ref.state, slam_ref.state->_timestamp + future_time, state_plus, true);
 
 			// The timestamp here has to be approximated using current system time. Also I dont think this time is
 			// used anywhere atm and should probably be cleaned up at some point
@@ -340,6 +341,7 @@ public:
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
+	// std::unique_ptr<writer<State>> _m_ov_state;
 	time_type _m_begin;
 	State *state;
 
