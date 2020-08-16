@@ -117,16 +117,14 @@ public:
 		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
 	{
-		pb->register_impl<pose_prediction>(std::static_pointer_cast<pose_prediction>(
-			std::make_shared<pose_prediction_impl>(*this)
-		));
 		_m_pose = sb->publish<pose_type>("slow_pose");
-		// _m_ov_state = sb->publish<State>("ov_state");
+		_m_imu_biases = sb->publish<imu_biases_type>("imu_biases");
+		_m_slam_ready = sb->publish<bool>("slam_ready");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
-		state = NULL;
 
 		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+		_m_slam_ready->put(new bool(false));
 	}
 
 
@@ -153,6 +151,20 @@ public:
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
+		if (open_vins_estimator.initialized()) {
+			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
+			imu_biases_type *biases = new imu_biases_type {
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(),
+				Eigen::Matrix<double, 13, 1>::Zero()
+			};
+        	open_vins_estimator.get_propagator()->fast_state_propagate(state, timestamp_in_seconds, state_plus, biases);
+
+			_m_imu_biases->put(biases);
+		}
+
 
 		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
 		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
@@ -190,6 +202,7 @@ public:
 		if (open_vins_estimator.initialized()) {
 			if (isUninitialized) {
 				isUninitialized = false;
+				_m_slam_ready->put(new bool(true));
 			}
 
 			_m_pose->put(new pose_type{
@@ -211,137 +224,12 @@ public:
 
 
 	virtual ~slam2() override {}
-
-	// This is defined here because Pose prediction needs access to open_vins_estimator
-	// object that is created and updated with new IMU/Cam values in Slam 
-	class pose_prediction_impl : public pose_prediction {
-	public:
-		pose_prediction_impl(slam2& slam_reference) 
-			: slam_ref{slam_reference}
-			, _m_slow_pose{slam_reference.sb->subscribe_latest<pose_type>("slow_pose")}
-			, _m_true_pose{slam_reference.sb->subscribe_latest<pose_type>("true_pose")}
-			{}
-
-		virtual pose_type get_true_pose() const override {
-			const pose_type* pose_ptr = _m_true_pose->get_latest_ro();
-			return correct_pose(
-				pose_ptr ? *pose_ptr : pose_type{}
-			);
-		}
-
-		// No paramter pose predict will just get the current slow pose
-		virtual pose_type get_fast_pose() const override {
-			const pose_type* pose_ptr = _m_slow_pose->get_latest_ro();
-			return correct_pose(
-				pose_ptr ? *pose_ptr : pose_type{}
-			);
-		}
-
-		// future_time: Timestamp in the future in seconds
-		virtual pose_type get_fast_pose(double future_time) const override {
-			if (!slam_ref.open_vins_estimator.initialized()) {
-				return get_fast_pose();
-			}
-
-			// We need to do this because OpenVINS will update the state object and since were using fake IMU
-			// values to get a "future" pose we dont want these fake values to interfere with predictions using real IMU values
-			// State temp_state = State(*slam_ref.state);
-
-			// Get fast propagate state at the desired timestamp
-			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
-			slam_ref.open_vins_estimator.get_propagator()->fast_state_propagate(slam_ref.state, slam_ref.state->_timestamp + future_time, state_plus, true);
-
-			// The timestamp here has to be approximated using current system time. Also I dont think this time is
-			// used anywhere atm and should probably be cleaned up at some point
-			pose_type* pose_ptr = new pose_type {
-				std::chrono::system_clock::now() + std::chrono::seconds{static_cast<ullong>(future_time) - static_cast<ullong>(slam_ref.previous_timestamp)}, 
-				Eigen::Vector3f{static_cast<float>(state_plus(4)), static_cast<float>(state_plus(5)), static_cast<float>(state_plus(6))}, 
-				Eigen::Quaternionf{static_cast<float>(state_plus(3)), static_cast<float>(state_plus(0)), static_cast<float>(state_plus(1)), static_cast<float>(state_plus(2))}
-			};
-
-			return correct_pose(*pose_ptr);
-		}
 		
-		virtual void set_offset(const Eigen::Quaternionf& raw_o_times_offset) override {
-			std::lock_guard<std::mutex> lock {offset_mutex};
-			Eigen::Quaternionf raw_o = raw_o_times_offset * offset.inverse();
-			std::cout << "pose_prediction: set_offset" << std::endl;
-			offset = raw_o.inverse();
-			/*
-			Now, `raw_o` is maps to the identity quaternion.
-
-			Proof:
-			apply_offset(raw_o)
-				= raw_o * offset
-				= raw_o * raw_o.inverse()
-				= Identity.
-			*/
-		}
-
-		Eigen::Quaternionf apply_offset(const Eigen::Quaternionf& orientation) const {
-			std::lock_guard<std::mutex> lock {offset_mutex};
-			return orientation * offset;
-		}
-
-
-		virtual bool fast_pose_reliable() const override {
-			//return _m_slow_pose.valid();
-			/*
-			SLAM takes some time to initialize, so initially fast_pose
-			is unreliable.
-
-			In such cases, we might return a fast_pose based only on the
-			IMU data (currently, we just return a zero-pose)., and mark
-			it as "unreliable"
-
-			This way, there always a pose coming out of pose_prediction,
-			representing our best guess at that time, and we indicate
-			how reliable that guess is here.
-
-			*/
-			return true;
-		}
-
-		virtual bool true_pose_reliable() const override {
-			//return _m_true_pose.valid();
-			/*
-			We do not have a "ground truth" available in all cases, such
-			as when reading live data.
-			*/
-			return true;
-		}
-
-	private:
-		slam2& slam_ref;
-		std::unique_ptr<reader_latest<pose_type>> _m_slow_pose;
-		std::unique_ptr<reader_latest<pose_type>> _m_true_pose;
-		Eigen::Quaternionf offset {Eigen::Quaternionf::Identity()};
-		mutable std::mutex offset_mutex;
-
-		pose_type correct_pose(const pose_type pose) const {
-			pose_type swapped_pose;
-
-			// This uses the OpenVINS standard output coordinate system.
-			// This is a mapping between the OV coordinate system and the OpenGL system.
-			swapped_pose.position.x() = -pose.position.y();
-			swapped_pose.position.y() = pose.position.z();
-			swapped_pose.position.z() = -pose.position.x();
-
-			// There is a slight issue with the orientations: basically,
-			// the output orientation acts as though the "top of the head" is the
-			// forward direction, and the "eye direction" is the up direction.
-			Eigen::Quaternionf raw_o (pose.orientation.w(), -pose.orientation.y(), pose.orientation.z(), -pose.orientation.x());
-
-			swapped_pose.orientation = apply_offset(raw_o);
-
-			return swapped_pose;
-		}
-	};
-
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
-	// std::unique_ptr<writer<State>> _m_ov_state;
+	std::unique_ptr<writer<imu_biases_type>> _m_imu_biases;
+	std::unique_ptr<writer<bool>> _m_slam_ready;
 	time_type _m_begin;
 	State *state;
 

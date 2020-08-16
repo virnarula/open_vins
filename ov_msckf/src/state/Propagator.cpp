@@ -117,7 +117,7 @@ void Propagator::propagate_and_clone(State* state, double timestamp) {
 
 
 // We add an optional param because we want to do integration with interpolated IMU values past the available cam images
-void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, bool extend_integration = false) {
+void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, ILLIXR::imu_biases_type *biases) {
 
     // Set the last time offset value if we have just started the system up
     if(!have_last_prop_time_offset) {
@@ -131,45 +131,7 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
     // First lets construct an IMU vector of measurements we need
     double time0 = state->_timestamp+last_prop_time_offset;
     double time1 = timestamp+t_off_new;
-    std::cout << time1 << std::endl;
     vector<IMUDATA> prop_data = Propagator::select_imu_readings(imu_data,time0,time1);
-
-    // If we want to predict past available camera frames, interpolate an IMU measurement using a constant acceleration
-    // model for a measurement at time1
-    if (extend_integration) {
-
-        // Some some state on the last VALID IMU reading
-        IMUDATA last_valid_imu = prop_data.at(prop_data.size()-1);
-        IMUDATA second_last_valid_imu = prop_data.at(prop_data.size()-2);
-        double imu_interval = last_valid_imu.timestamp - second_last_valid_imu.timestamp;
-        Eigen::Matrix<double, 3, 1> delta_wm = (last_valid_imu.wm - second_last_valid_imu.wm) * imu_interval;
-
-        double time_counter = time1 - last_valid_imu.timestamp;
-        while (time_counter >= imu_interval) {
-
-            // Get the last IMU mesasurement in the list
-            IMUDATA interpolated_measurement = {
-                prop_data.at(prop_data.size()-1).timestamp + imu_interval,
-                prop_data.at(prop_data.size()-1).wm + delta_wm,
-                last_valid_imu.am,
-            };
-            prop_data.push_back(interpolated_measurement);
-
-            time_counter -= imu_interval;
-        }
-
-        // If theres time left thats smaller than the IMU interval, scale the delta_wm down
-        if (time_counter > 0) {
-            delta_wm = (last_valid_imu.wm - second_last_valid_imu.wm) * (time_counter / imu_interval);
-
-            IMUDATA interpolated_measurement = {
-                prop_data.at(prop_data.size()-1).timestamp + imu_interval,
-                prop_data.at(prop_data.size()-1).wm + delta_wm,
-                last_valid_imu.am,
-            };
-            prop_data.push_back(interpolated_measurement);
-        }
-    }
 
     // Save the original IMU state
     Eigen::VectorXd orig_val = state->_imu->value();
@@ -178,6 +140,11 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
     // Loop through all IMU messages, and use them to move the state forward in time
     // This uses the zero'th order quat, and then constant acceleration discrete
     if(prop_data.size() > 1) {
+        Eigen::Matrix<double,3,1> w_hat;
+        Eigen::Matrix<double,3,1> a_hat ;
+        Eigen::Matrix<double,3,1> w_hat2;
+        Eigen::Matrix<double,3,1> a_hat2;
+    
         for(size_t i=0; i<prop_data.size()-1; i++) {
 
             // Time elapsed over interval
@@ -185,10 +152,10 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
             //assert(data_plus.timestamp>data_minus.timestamp);
 
             // Corrected imu measurements
-            Eigen::Matrix<double,3,1> w_hat = prop_data.at(i).wm - state->_imu->bias_g();
-            Eigen::Matrix<double,3,1> a_hat = prop_data.at(i).am - state->_imu->bias_a();
-            Eigen::Matrix<double,3,1> w_hat2 = prop_data.at(i+1).wm - state->_imu->bias_g();
-            Eigen::Matrix<double,3,1> a_hat2 = prop_data.at(i+1).am - state->_imu->bias_a();
+            w_hat = prop_data.at(i).wm - state->_imu->bias_g();
+            a_hat = prop_data.at(i).am - state->_imu->bias_a();
+            w_hat2 = prop_data.at(i+1).wm - state->_imu->bias_g();
+            a_hat2 = prop_data.at(i+1).am - state->_imu->bias_a();
 
             // Compute the new state mean value
             Eigen::Vector4d new_q;
@@ -205,15 +172,21 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
             state->_imu->set_fej(imu_x);
 
         }
+
+        biases->w_hat = w_hat;
+        biases->a_hat = a_hat;
+        biases->w_hat2 = w_hat2;
+        biases->a_hat2 = a_hat2;
     }
 
     // Now record what the predicted state should be
     state_plus = Eigen::Matrix<double,13,1>::Zero();
     state_plus.block(0,0,4,1) = state->_imu->quat();
     state_plus.block(4,0,3,1) = state->_imu->pos();
-    state_plus.block(7,0,3,1) = state->_imu->vel();
+    state_plus.block(7,0,3,1) = state->_imu->vel();    
     if(prop_data.size() > 1) state_plus.block(10,0,3,1) = prop_data.at(prop_data.size()-2).wm - state->_imu->bias_g();
     else if(!prop_data.empty()) state_plus.block(10,0,3,1) = prop_data.at(prop_data.size()-1).wm - state->_imu->bias_g();
+    biases->pose = state_plus;
 
     // Finally replace the imu with the original state we had
     state->_imu->set_value(orig_val);
