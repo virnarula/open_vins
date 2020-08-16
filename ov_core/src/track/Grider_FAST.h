@@ -94,7 +94,7 @@ namespace ov_core {
             int ct_rows = std::floor(img.rows/size_y);
             std::vector<std::vector<cv::KeyPoint>> collection(ct_cols*ct_rows);
             parallel_for_(cv::Range(0, ct_cols*ct_rows), [&](const cv::Range& range) {
-				PRINT_RECORD_FOR_THIS_BLOCK("slam2 pf");
+				// PRINT_RECORD_FOR_THIS_BLOCK("slam2 par_for");
 
                 for (int r = range.start; r < range.end; r++) {
 
