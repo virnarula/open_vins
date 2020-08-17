@@ -119,12 +119,10 @@ public:
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
 		_m_imu_biases = sb->publish<imu_biases_type>("imu_biases");
-		_m_slam_ready = sb->publish<bool>("slam_ready");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
 		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
-		_m_slam_ready->put(new bool(false));
 	}
 
 
@@ -205,9 +203,6 @@ public:
 		if (open_vins_estimator.initialized()) {
 			if (isUninitialized) {
 				isUninitialized = false;
-				// TODO: no need for this
-				// Can just check if the other imu_biases is empty or not.
-				_m_slam_ready->put(new bool(true));
 			}
 
 			_m_pose->put(new pose_type{
@@ -238,7 +233,6 @@ private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	std::unique_ptr<writer<imu_biases_type>> _m_imu_biases;
-	std::unique_ptr<writer<bool>> _m_slam_ready;
 	time_type _m_begin;
 	State *state;
 
