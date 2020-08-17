@@ -13,6 +13,8 @@
 #include "common/plugin.hpp"
 #include "common/switchboard.hpp"
 #include "common/data_format.hpp"
+#include "common/pose_prediction.hpp"
+#include "common/phonebook.hpp"
 
 using namespace ILLIXR;
 using namespace ov_msckf;
@@ -116,10 +118,13 @@ public:
 		, open_vins_estimator{manager_params}
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
+		_m_imu_biases = sb->publish<imu_biases_type>("imu_biases");
+		_m_slam_ready = sb->publish<bool>("slam_ready");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
 		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+		_m_slam_ready->put(new bool(false));
 	}
 
 
@@ -147,6 +152,20 @@ public:
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
+		if (open_vins_estimator.initialized()) {
+			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
+			imu_biases_type *biases = new imu_biases_type {
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(),
+				Eigen::Matrix<double, 13, 1>::Zero()
+			};
+        	open_vins_estimator.get_propagator()->fast_state_propagate(state, timestamp_in_seconds, state_plus, biases);
+
+			_m_imu_biases->put(biases);
+		}
+
 
 		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
 		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
@@ -166,7 +185,7 @@ public:
 		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
 
 		// Get the pose returned from SLAM
-		State *state = open_vins_estimator.get_state();
+		state = open_vins_estimator.get_state();
 		Eigen::Vector4d quat = state->_imu->quat();
 		Eigen::Vector3d pose = state->_imu->pos();
 
@@ -184,6 +203,7 @@ public:
 		if (open_vins_estimator.initialized()) {
 			if (isUninitialized) {
 				isUninitialized = false;
+				_m_slam_ready->put(new bool(true));
 			}
 
 			_m_pose->put(new pose_type{
@@ -205,12 +225,14 @@ public:
 
 
 	virtual ~slam2() override {}
-
-
+		
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
+	std::unique_ptr<writer<imu_biases_type>> _m_imu_biases;
+	std::unique_ptr<writer<bool>> _m_slam_ready;
 	time_type _m_begin;
+	State *state;
 
 	VioManagerOptions manager_params = create_params();
 	VioManager open_vins_estimator;
