@@ -184,7 +184,7 @@ public:
 		cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
 		cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
-		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
+		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
 
 		// Get the pose returned from SLAM
 		state = open_vins_estimator.get_state();
@@ -205,6 +205,8 @@ public:
 		if (open_vins_estimator.initialized()) {
 			if (isUninitialized) {
 				isUninitialized = false;
+				// TODO: no need for this
+				// Can just check if the other imu_biases is empty or not.
 				_m_slam_ready->put(new bool(true));
 			}
 
@@ -215,9 +217,9 @@ public:
 			});
 		}
 
-#ifdef CV_HAS_SAMS_COUNTER
-		cv::incCounter();
-#endif
+// #ifdef CV_HAS_SAMS_COUNTER
+// 		cv::incCounter();
+// #endif
 
 		// I know, a priori, nobody other plugins subscribe to this topic
 		// Therefore, I can const the cast away, and delete stuff
