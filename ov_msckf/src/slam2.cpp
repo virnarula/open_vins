@@ -181,6 +181,8 @@ public:
 		
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
+		cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
+		cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
 		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
 
@@ -212,6 +214,10 @@ public:
 				swapped_rot,
 			});
 		}
+
+#ifdef CV_HAS_SAMS_COUNTER
+		cv::incCounter();
+#endif
 
 		// I know, a priori, nobody other plugins subscribe to this topic
 		// Therefore, I can const the cast away, and delete stuff
