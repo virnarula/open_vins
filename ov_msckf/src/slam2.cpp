@@ -2,6 +2,7 @@
 
 #include <opencv/cv.hpp>
 #include <opencv2/core/core.hpp>
+#include <opencv2/core/utility.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 #include <math.h>
@@ -123,6 +124,11 @@ public:
 		imu_cam_buffer = NULL;
 
 		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+
+#ifdef CV_HAS_METRICS
+		cv::metrics::setAccount(new std::string{"-1"});
+#endif
+
 	}
 
 
@@ -134,6 +140,7 @@ public:
 	}
 
 
+	std::size_t iteration_no = 0;
 	void feed_imu_cam(const imu_cam_type *datum) {
 		// Ensures that slam doesnt start before valid IMU readings come in
 		if (datum == NULL) {
@@ -164,7 +171,6 @@ public:
 			_m_imu_biases->put(biases);
 		}
 
-
 		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
 		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
 		// 	datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
@@ -176,7 +182,17 @@ public:
 			imu_cam_buffer = datum;
 			return;
 		}
-		
+
+#ifdef CV_HAS_METRICS
+		cv::metrics::setAccount(new std::string{std::to_string(iteration_no)});
+		iteration_no++;
+		if (iteration_no % 20 == 0) {
+			cv::metrics::dump();
+		}
+#else
+#warning "No OpenCV metrics available. Please recompile OpenCV from git clone --branch 3.4.6-instrumented https://github.com/ILLIXR/opencv/. (see install_deps.sh)"
+#endif
+
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
 		cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
@@ -211,10 +227,6 @@ public:
 				swapped_rot,
 			});
 		}
-
-// #ifdef CV_HAS_SAMS_COUNTER
-// 		cv::incCounter();
-// #endif
 
 		// I know, a priori, nobody other plugins subscribe to this topic
 		// Therefore, I can const the cast away, and delete stuff
