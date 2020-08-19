@@ -123,7 +123,13 @@ public:
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
-		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+		_m_pose->put(
+			new pose_type{
+				.sensor_time = std::chrono::time_point<std::chrono::system_clock>{},
+				.position = Eigen::Vector3f{0, 0, 0},
+				.orientation = Eigen::Quaternionf{1, 0, 0, 0}
+			}
+		);
 
 #ifdef CV_HAS_METRICS
 		cv::metrics::setAccount(new std::string{"-1"});
@@ -164,7 +170,10 @@ public:
 				Eigen::Matrix<double, 3, 1>::Zero(), 
 				Eigen::Matrix<double, 3, 1>::Zero(), 
 				Eigen::Matrix<double, 3, 1>::Zero(),
-				Eigen::Matrix<double, 13, 1>::Zero()
+				Eigen::Matrix<double, 13, 1>::Zero(),
+				// Record the timestamp (in ILLIXR time) associated with this imu sample.
+				// Used for MTP calculations.
+				datum->time
 			};
         	open_vins_estimator.get_propagator()->fast_state_propagate(state, timestamp_in_seconds, state_plus, biases);
 
@@ -222,9 +231,9 @@ public:
 			}
 
 			_m_pose->put(new pose_type{
-				imu_cam_buffer->time,
-				swapped_pos,
-				swapped_rot,
+				.sensor_time = imu_cam_buffer->time,
+				.position = swapped_pos,
+				.orientation = swapped_rot,
 			});
 		}
 
