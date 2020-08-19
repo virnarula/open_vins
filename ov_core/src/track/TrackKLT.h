@@ -23,7 +23,7 @@
 
 
 #include "TrackBase.h"
-
+#include "common/cpu_timer.hpp"
 
 namespace ov_core {
 
@@ -143,6 +143,9 @@ namespace ov_core {
 
         // Last set of image pyramids
         std::map<size_t, std::vector<cv::Mat>> img_pyramid_last;
+
+	private:
+		callback_timers cts {"TrackKLT", {"slam2 hist l", "slam2 hist r", "slam2 pyramid l", "slam2 pyramid r", "slam2 matching l", "slam2 matching r"}};
 
     };
 

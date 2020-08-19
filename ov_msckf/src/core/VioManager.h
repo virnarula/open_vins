@@ -43,6 +43,7 @@
 #include "update/UpdaterSLAM.h"
 
 #include "VioManagerOptions.h"
+#include "../common/cpu_timer.hpp"
 
 
 namespace ov_msckf {
@@ -144,22 +145,22 @@ namespace ov_msckf {
 
         /// Accessor to get the current state
         State* get_state() {
-            return state;
+            return state.get();
         }
 
         /// Accessor to get the current propagator
         Propagator* get_propagator() {
-            return propagator;
+            return propagator.get();
         }
 
         /// Get feature tracker
         TrackBase* get_track_feat() {
-            return trackFEATS;
+            return trackFEATS.get();
         }
 
         /// Get aruco feature tracker
         TrackBase* get_track_aruco() {
-            return trackARUCO;
+            return trackARUCO.get();
         }
 
         /// Returns 3d features used in the last update in global frame
@@ -239,28 +240,28 @@ namespace ov_msckf {
         VioManagerOptions params;
 
         /// Our master state object :D
-        State* state;
+		std::unique_ptr<State> state;
 
         /// Propagator of our state
-        Propagator* propagator;
+		std::unique_ptr<Propagator> propagator;
 
         /// Our sparse feature tracker (klt or descriptor)
-        TrackBase* trackFEATS = nullptr;
+        std::unique_ptr<TrackBase> trackFEATS = nullptr;
 
         /// Our aruoc tracker
-        TrackBase* trackARUCO = nullptr;
+        std::unique_ptr<TrackBase> trackARUCO = nullptr;
 
         /// State initializer
-        InertialInitializer* initializer;
+        std::unique_ptr<InertialInitializer> initializer;
 
         /// Boolean if we are initialized or not
         bool is_initialized_vio = false;
 
         /// Our MSCKF feature updater
-        UpdaterMSCKF* updaterMSCKF;
+        std::unique_ptr<UpdaterMSCKF> updaterMSCKF;
 
         /// Our MSCKF feature updater
-        UpdaterSLAM* updaterSLAM;
+        std::unique_ptr<UpdaterSLAM> updaterSLAM;
 
         /// Good features that where used in the last update
         std::vector<Eigen::Vector3d> good_features_MSCKF;
@@ -276,6 +277,7 @@ namespace ov_msckf {
         // Startup time of the filter
         double startup_time = -1;
 
+		callback_timers cts {"VioManager", {"slam2 feed l", "slam2 feed r"}};
 
     };
 
