@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
 	string imu0_filename = string(argv[3]);
 	string cam0_images_path = string(argv[4]);
 	string cam1_images_path = string(argv[5]);
-	
+
 	load_images(cam0_filename, cam0_images, cam0_timestamps);
 	load_images(cam1_filename, cam1_images, cam1_timestamps);
 	load_imu_data(imu0_filename, imu0_vals, imu0_timestamps);
@@ -206,12 +206,13 @@ int main(int argc, char** argv) {
 		if (cam1_images.find(timem) != cam1_images.end()) {
             // Get the image
 			img1 = cv::imread(cam1_images_path+ "/" +cam1_images.at(timem), cv::IMREAD_COLOR);
-			cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
+
 			if (img1.empty()) {
 				cerr << endl << "Failed to load image at: "
 					 << cam1_images_path << "/" << cam1_images.at(timem) << endl;
 				return 1;
 			}
+			cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
 
 			//cout << "img1 Height: " << img1.rows << "   Width: " << img1.cols << endl;
 
@@ -314,21 +315,3 @@ int main(int argc, char** argv) {
 	cout << "DONE!" << endl;
     return EXIT_SUCCESS;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

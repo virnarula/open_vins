@@ -294,7 +294,7 @@ VioManager::VioManager() {
     // Load inertial state initialize parameters
     double init_window_time, init_imu_thresh;
 	init_window_time = 0.5; // init_window_time
-	init_imu_thresh = 1.0; // init_imu_thresh
+	init_imu_thresh = 1.5; // init_imu_thresh
 
     // Debug print out
     ROS_INFO("INITIALIZATION PARAMETERS:");
@@ -729,7 +729,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     double tracking_time = (rT2 - rT1).total_microseconds() * 1e-3;
     double filter_time = (rT6 - rT2).total_microseconds() * 1e-3;
 
-    if (total_images >= 100) {
+    // if (total_images >= 100) {
         counted_images++;
         total_tracking_time += tracking_time;
         total_filter_time += filter_time;
@@ -743,7 +743,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
         //cout << "Total images = " << total_images << "\n";
         //cout << "Average time per frame = " << total_time / (double) total_images << " ms\n";
         //cout << "Number of OpenCV threads = " << cv::getNumThreads() << "\n";
-    }
+    // }
 
     //===================================================================================
     // Debug info, and stats tracking
@@ -815,26 +815,3 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
