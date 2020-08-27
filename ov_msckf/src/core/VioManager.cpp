@@ -41,7 +41,7 @@ VioManager::VioManager(VioManagerOptions& params_) {
     params.print_trackers();
 
     // Create the state!!
-    state = new State(params.state_options);
+    state = std::unique_ptr<State>(new State(params.state_options));
 
     // Timeoffset from camera to IMU
     Eigen::VectorXd temp_camimu_dt;
@@ -98,24 +98,24 @@ VioManager::VioManager(VioManagerOptions& params_) {
 
     // Lets make a feature extractor
     if(params.use_klt) {
-        trackFEATS = new TrackKLT(params.num_pts,state->_options.max_aruco_features,params.fast_threshold,params.grid_x,params.grid_y,params.min_px_dist);
+        trackFEATS = std::unique_ptr<TrackBase>(new TrackKLT(params.num_pts,state->_options.max_aruco_features,params.fast_threshold,params.grid_x,params.grid_y,params.min_px_dist));
         trackFEATS->set_calibration(params.camera_intrinsics, params.camera_fisheye);
     } else {
-        trackFEATS = new TrackDescriptor(params.num_pts,state->_options.max_aruco_features,params.fast_threshold,params.grid_x,params.grid_y,params.knn_ratio);
+        trackFEATS = std::unique_ptr<TrackBase>(new TrackDescriptor(params.num_pts,state->_options.max_aruco_features,params.fast_threshold,params.grid_x,params.grid_y,params.knn_ratio));
         trackFEATS->set_calibration(params.camera_intrinsics, params.camera_fisheye);
     }
 
     // Initialize our aruco tag extractor
     if(params.use_aruco) {
-        trackARUCO = new TrackAruco(state->_options.max_aruco_features, params.downsize_aruco);
+        trackARUCO = std::unique_ptr<TrackBase>(new TrackAruco(state->_options.max_aruco_features, params.downsize_aruco));
         trackARUCO->set_calibration(params.camera_intrinsics, params.camera_fisheye);
     }
 
     // Initialize our state propagator
-    propagator = new Propagator(params.imu_noises, params.gravity);
+    propagator = std::unique_ptr<Propagator>(new Propagator(params.imu_noises, params.gravity));
 
     // Our state initialize
-    initializer = new InertialInitializer(params.gravity,params.init_window_time,params.init_imu_thresh);
+    initializer = std::unique_ptr<InertialInitializer>(new InertialInitializer(params.gravity,params.init_window_time,params.init_imu_thresh));
 
     // Make the updater!
     updaterMSCKF = new UpdaterMSCKF(params.msckf_options,params.featinit_options);
@@ -175,8 +175,8 @@ void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Ma
     if(params.use_stereo) {
         trackFEATS->feed_stereo(timestamp, img0, img1, cam_id0, cam_id1);
     } else {
-        std::thread t_l = timed_thread("slam2 feed l", &TrackBase::feed_monocular, trackFEATS, boost::ref(timestamp), boost::ref(img0), boost::ref(cam_id0));
-        std::thread t_r = timed_thread("slam2 feed r", &TrackBase::feed_monocular, trackFEATS, boost::ref(timestamp), boost::ref(img1), boost::ref(cam_id1));
+        std::thread t_l = timed_thread("slam2 feed l", &TrackBase::feed_monocular, trackFEATS.get(), boost::ref(timestamp), boost::ref(img0), boost::ref(cam_id0));
+        std::thread t_r = timed_thread("slam2 feed r", &TrackBase::feed_monocular, trackFEATS.get(), boost::ref(timestamp), boost::ref(img1), boost::ref(cam_id1));
         t_l.join();
         t_r.join();
     }
@@ -209,16 +209,16 @@ void VioManager::feed_measurement_simulation(double timestamp, const std::vector
     rT1 =  boost::posix_time::microsec_clock::local_time();
 
     // Check if we actually have a simulated tracker
-    TrackSIM *trackSIM = dynamic_cast<TrackSIM*>(trackFEATS);
+    // Calling trackFEATS.get() is safe because `this` (and thus `trackFEATS`) outlives `trackSIM`
+	TrackSIM *trackSIM = dynamic_cast<TrackSIM*>(trackFEATS.get());
     if(trackSIM == nullptr) {
         //delete trackFEATS; //(fix this error in the future)
-        trackFEATS = new TrackSIM(state->_options.max_aruco_features);
+        trackFEATS = std::unique_ptr<TrackSIM>(new TrackSIM(state->_options.max_aruco_features));
         trackFEATS->set_calibration(params.camera_intrinsics, params.camera_fisheye);
         printf(RED "[SIM]: casting our tracker to a TrackSIM object!\n" RESET);
     }
 
     // Cast the tracker to our simulation tracker
-    trackSIM = dynamic_cast<TrackSIM*>(trackFEATS);
     trackSIM->set_width_height(params.camera_wh);
 
     // Feed our simulation tracker
@@ -302,7 +302,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 
     // Propagate the state forward to the current update time
     // Also augment it with a new clone!
-    propagator->propagate_and_clone(state, timestamp);
+    propagator->propagate_and_clone(state.get(), timestamp);
     rT3 =  boost::posix_time::microsec_clock::local_time();
 
     // If we have not reached max clones, we should just return...
@@ -408,7 +408,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     // Lets marginalize out all old SLAM features here
     // These are ones that where not successfully tracked into the current frame
     // We do *NOT* marginalize out our aruco tags
-    StateHelper::marginalize_slam(state);
+    StateHelper::marginalize_slam(state.get());
 
     // Separate our SLAM features into new ones, and old ones
     std::vector<Feature*> feats_slam_DELAYED, feats_slam_UPDATE;
@@ -438,7 +438,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     // NOTE: this should only really be used if you want to track a lot of features, or have limited computational resources
     if((int)featsup_MSCKF.size() > state->_options.max_msckf_in_update)
         featsup_MSCKF.erase(featsup_MSCKF.begin(), featsup_MSCKF.end()-state->_options.max_msckf_in_update);
-    updaterMSCKF->update(state, featsup_MSCKF);
+    updaterMSCKF->update(state.get(), featsup_MSCKF);
     rT4 =  boost::posix_time::microsec_clock::local_time();
 
     // Perform SLAM delay init and update
@@ -451,12 +451,12 @@ void VioManager::do_feature_propagate_update(double timestamp) {
         featsup_TEMP.insert(featsup_TEMP.begin(), feats_slam_UPDATE.begin(), feats_slam_UPDATE.begin()+std::min(state->_options.max_slam_in_update,(int)feats_slam_UPDATE.size()));
         feats_slam_UPDATE.erase(feats_slam_UPDATE.begin(), feats_slam_UPDATE.begin()+std::min(state->_options.max_slam_in_update,(int)feats_slam_UPDATE.size()));
         // Do the update
-        updaterSLAM->update(state, featsup_TEMP);
+        updaterSLAM->update(state.get(), featsup_TEMP);
         feats_slam_UPDATE_TEMP.insert(feats_slam_UPDATE_TEMP.end(), featsup_TEMP.begin(), featsup_TEMP.end());
     }
     feats_slam_UPDATE = feats_slam_UPDATE_TEMP;
     rT5 =  boost::posix_time::microsec_clock::local_time();
-    updaterSLAM->delayed_init(state, feats_slam_DELAYED);
+    updaterSLAM->delayed_init(state.get(), feats_slam_DELAYED);
     rT6 =  boost::posix_time::microsec_clock::local_time();
 
 
@@ -485,7 +485,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     //===================================================================================
 
     // First do anchor change if we are about to lose an anchor pose
-    updaterSLAM->change_anchors(state);
+    updaterSLAM->change_anchors(state.get());
 
     // Marginalize the oldest clone of the state if we are at max length
     if((int)state->_clones_IMU.size() > state->_options.max_clone_size) {
