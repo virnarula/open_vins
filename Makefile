@@ -29,6 +29,9 @@ build/Release/Makefile:
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_C_COMPILER=$(CC) ../.. && \
 	true
 
+tests/run:
+tests/gdb:
+
 .PHONY: clean
 clean:
 	touch build && rm -rf build *.so
