@@ -24,6 +24,7 @@
 
 #include "state/StateHelper.h"
 #include "utils/quat_ops.h"
+#include "common/data_format.hpp"
 
 
 using namespace ov_core;
@@ -176,8 +177,9 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @param timestamp Time to propagate to
          * @param state_plus The propagated state (q_GtoI, p_IinG, v_IinG, w_IinI)
+         * @param extend_integration If we want to integrate past available camera images usig interpolated IMU values (const accel)
          */
-        void fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus);
+        void fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, ILLIXR::imu_biases_type *biases);
 
 
         /**

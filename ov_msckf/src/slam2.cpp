@@ -2,6 +2,7 @@
 
 #include <opencv/cv.hpp>
 #include <opencv2/core/core.hpp>
+#include <opencv2/core/utility.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 #include <math.h>
@@ -13,6 +14,8 @@
 #include "common/plugin.hpp"
 #include "common/switchboard.hpp"
 #include "common/data_format.hpp"
+#include "common/pose_prediction.hpp"
+#include "common/phonebook.hpp"
 
 using namespace ILLIXR;
 using namespace ov_msckf;
@@ -116,11 +119,13 @@ public:
 		, open_vins_estimator{manager_params}
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
+		_m_imu_biases = sb->publish<imu_biases_type>("imu_biases");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
 		_m_pose->put(
 			new pose_type{
+				.sensor_time = std::chrono::time_point<std::chrono::system_clock>{},
 				.position = Eigen::Vector3f{0, 0, 0},
 				.orientation = Eigen::Quaternionf{1, 0, 0, 0}
 			}
@@ -158,6 +163,22 @@ public:
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
+		if (open_vins_estimator.initialized()) {
+			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
+			imu_biases_type *biases = new imu_biases_type {
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(), 
+				Eigen::Matrix<double, 3, 1>::Zero(),
+				Eigen::Matrix<double, 13, 1>::Zero(),
+				// Record the timestamp (in ILLIXR time) associated with this imu sample.
+				// Used for MTP calculations.
+				datum->time
+			};
+        	open_vins_estimator.get_propagator()->fast_state_propagate(state, timestamp_in_seconds, state_plus, biases);
+
+			_m_imu_biases->put(biases);
+		}
 
 		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
 		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
@@ -184,10 +205,10 @@ public:
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
-		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
+		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
 
 		// Get the pose returned from SLAM
-		State *state = open_vins_estimator.get_state();
+		state = open_vins_estimator.get_state();
 		Eigen::Vector4d quat = state->_imu->quat();
 		Eigen::Vector3d pose = state->_imu->pos();
 
@@ -208,9 +229,9 @@ public:
 			}
 
 			_m_pose->put(new pose_type{
-				imu_cam_buffer->time,
-				swapped_pos,
-				swapped_rot,
+				.sensor_time = imu_cam_buffer->time,
+				.position = swapped_pos,
+				.orientation = swapped_rot,
 			});
 		}
 
@@ -224,14 +245,14 @@ public:
 		imu_cam_buffer = datum;
 	}
 
-
 	virtual ~slam2() override {}
-
 
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
+	std::unique_ptr<writer<imu_biases_type>> _m_imu_biases;
 	time_type _m_begin;
+	State *state;
 
 	VioManagerOptions manager_params = create_params();
 	VioManager open_vins_estimator;

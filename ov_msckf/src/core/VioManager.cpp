@@ -531,6 +531,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     double time_marg = (rT7-rT6).total_microseconds() * 1e-6;
     double time_total = (rT7-rT1).total_microseconds() * 1e-6;
 
+#ifndef NDEBUG
     // Timing information
     printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
     printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, time_prop);
@@ -541,6 +542,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     }
     printf(BLUE "[TIME]: %.4f seconds for marginalization (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
     printf(BLUE "[TIME]: %.4f seconds for total\n" RESET, time_total);
+#endif
 
     // Finally if we are saving stats to file, lets save it to file
     if(params.record_timing_information && of_statistics.is_open()) {
