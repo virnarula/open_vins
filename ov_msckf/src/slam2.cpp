@@ -140,7 +140,7 @@ public:
 
 	virtual void start() override {
 		plugin::start();
-		sb->schedule<imu_cam_type>(get_name(), "imu_cam", [&](const imu_cam_type *datum) {
+		sb->schedule<imu_cam_type>(id, "imu_cam", [&](const imu_cam_type *datum) {
 			this->feed_imu_cam(datum);
 		});
 	}
