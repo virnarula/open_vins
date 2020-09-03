@@ -119,17 +119,29 @@ public:
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
-		_m_pose->put(new pose_type{std::chrono::time_point<std::chrono::system_clock>{}, Eigen::Vector3f{0, 0, 0}, Eigen::Quaternionf{1, 0, 0, 0}});
+		_m_pose->put(
+			new pose_type{
+				.position = Eigen::Vector3f{0, 0, 0},
+				.orientation = Eigen::Quaternionf{1, 0, 0, 0}
+			}
+		);
+
+#ifdef CV_HAS_METRICS
+		cv::metrics::setAccount(new std::string{"-1"});
+#endif
+
 	}
 
 
 	virtual void start() override {
+		plugin::start();
 		sb->schedule<imu_cam_type>(get_name(), "imu_cam", [&](const imu_cam_type *datum) {
 			this->feed_imu_cam(datum);
 		});
 	}
 
 
+	std::size_t iteration_no = 0;
 	void feed_imu_cam(const imu_cam_type *datum) {
 		// Ensures that slam doesnt start before valid IMU readings come in
 		if (datum == NULL) {
@@ -158,7 +170,17 @@ public:
 			imu_cam_buffer = datum;
 			return;
 		}
-		
+
+#ifdef CV_HAS_METRICS
+		cv::metrics::setAccount(new std::string{std::to_string(iteration_no)});
+		iteration_no++;
+		if (iteration_no % 20 == 0) {
+			cv::metrics::dump();
+		}
+#else
+#warning "No OpenCV metrics available. Please recompile OpenCV from git clone --branch 3.4.6-instrumented https://github.com/ILLIXR/opencv/. (see install_deps.sh)"
+#endif
+
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
