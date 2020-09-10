@@ -186,13 +186,6 @@ public:
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
-		_m_pose->put(
-			new pose_type{
-				.position = Eigen::Vector3f{0, 0, 0},
-				.orientation = Eigen::Quaternionf{1, 0, 0, 0}
-			}
-		);
-
 #ifdef CV_HAS_METRICS
 		cv::metrics::setAccount(new std::string{"-1"});
 #endif
