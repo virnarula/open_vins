@@ -172,20 +172,25 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
             state->_imu->set_fej(imu_x);
 
         }
+
+        biases->w_hat = w_hat;
+        biases->a_hat = a_hat;
+        biases->w_hat2 = w_hat2;
+        biases->a_hat2 = a_hat2;
     }
 
     // Now record what the predicted state should be
     state_plus = Eigen::Matrix<double,13,1>::Zero();
     state_plus.block(0,0,4,1) = state->_imu->quat();
     state_plus.block(4,0,3,1) = state->_imu->pos();
-    state_plus.block(7,0,3,1) = state->_imu->vel();
+    state_plus.block(7,0,3,1) = state->_imu->vel();    
     if(prop_data.size() > 1) state_plus.block(10,0,3,1) = prop_data.at(prop_data.size()-2).wm - state->_imu->bias_g();
     else if(!prop_data.empty()) state_plus.block(10,0,3,1) = prop_data.at(prop_data.size()-1).wm - state->_imu->bias_g();
+    biases->pose = state_plus;
 
     // Finally replace the imu with the original state we had
     state->_imu->set_value(orig_val);
     state->_imu->set_fej(orig_fej);
-
 }
 
 
