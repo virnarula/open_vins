@@ -89,7 +89,9 @@ bool InertialInitializer::initialize_with_imu(double &time0, Eigen::Matrix<doubl
 
     // If it is below the threshold just return
     if(a_var < _imu_excite_threshold) {
-        printf(YELLOW "InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold %.4f < %.4f\n" RESET,a_var,_imu_excite_threshold);
+        #ifndef NDEBUG
+            printf(YELLOW "InertialInitializer::initialize_with_imu(): no IMU excitation, below threshold %.4f < %.4f\n" RESET,a_var,_imu_excite_threshold);
+        #endif
         return false;
     }
 
