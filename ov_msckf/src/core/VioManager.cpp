@@ -118,8 +118,8 @@ VioManager::VioManager(VioManagerOptions& params_) {
     initializer = std::unique_ptr<InertialInitializer>(new InertialInitializer(params.gravity,params.init_window_time,params.init_imu_thresh));
 
     // Make the updater!
-    updaterMSCKF = new UpdaterMSCKF(params.msckf_options,params.featinit_options);
-    updaterSLAM = new UpdaterSLAM(params.slam_options,params.aruco_options,params.featinit_options);
+    updaterMSCKF = std::unique_ptr<UpdaterMSCKF>(new UpdaterMSCKF(params.msckf_options,params.featinit_options));
+    updaterSLAM = std::unique_ptr<UpdaterSLAM>(new UpdaterSLAM(params.slam_options,params.aruco_options,params.featinit_options));
 }
 
 
@@ -495,7 +495,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
             trackARUCO->get_feature_database()->cleanup_measurements(state->margtimestep());
         }
         // Finally marginalize that clone
-        StateHelper::marginalize_old_clone(state);
+        StateHelper::marginalize_old_clone(state.get());
     }
 
     // Finally if we are optimizing our intrinsics, update our trackers
