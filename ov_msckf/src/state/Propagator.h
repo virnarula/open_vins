@@ -24,6 +24,7 @@
 
 #include "state/StateHelper.h"
 #include "utils/quat_ops.h"
+#include "common/data_format.hpp"
 
 
 using namespace ov_core;
@@ -176,8 +177,9 @@ namespace ov_msckf {
          * @param state Pointer to state
          * @param timestamp Time to propagate to
          * @param state_plus The propagated state (q_GtoI, p_IinG, v_IinG, w_IinI)
+         * @param imu_raw Output parameter which will contain the IMU raw data
          */
-        void fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus);
+        void fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, ILLIXR::imu_raw_type *imu_raw);
 
 
         /**
