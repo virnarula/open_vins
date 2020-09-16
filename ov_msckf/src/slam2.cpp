@@ -243,8 +243,10 @@ public:
 
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
+		cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
+		cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
-		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, *(imu_cam_buffer->img0.value()), *(imu_cam_buffer->img1.value()), 0, 1);
+		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
 
 		// Get the pose returned from SLAM
 		State *state = open_vins_estimator.get_state();
@@ -284,9 +286,7 @@ public:
 		imu_cam_buffer = datum;
 	}
 
-
 	virtual ~slam2() override {}
-
 
 private:
 	const std::shared_ptr<switchboard> sb;
