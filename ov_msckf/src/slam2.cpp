@@ -2,7 +2,6 @@
 
 #include <opencv/cv.hpp>
 #include <opencv2/core/core.hpp>
-#include <opencv2/core/utility.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 #include <math.h>
@@ -14,7 +13,6 @@
 #include "common/plugin.hpp"
 #include "common/switchboard.hpp"
 #include "common/data_format.hpp"
-#include "common/pose_prediction.hpp"
 #include "common/phonebook.hpp"
 
 using namespace ILLIXR;
@@ -186,7 +184,7 @@ public:
 		, open_vins_estimator{manager_params}
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
-		_m_imu_biases = sb->publish<imu_biases_type>("imu_biases");
+		_m_imu_raw = sb->publish<imu_raw_type>("imu_raw");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
@@ -232,7 +230,7 @@ public:
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
 		if (open_vins_estimator.initialized()) {
 			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
-			imu_biases_type *biases = new imu_biases_type {
+			imu_raw_type *imu_raw_data = new imu_raw_type {
 				Eigen::Matrix<double, 3, 1>::Zero(), 
 				Eigen::Matrix<double, 3, 1>::Zero(), 
 				Eigen::Matrix<double, 3, 1>::Zero(), 
@@ -242,9 +240,9 @@ public:
 				// Used for MTP calculations.
 				datum->time
 			};
-        	open_vins_estimator.get_propagator()->fast_state_propagate(state, timestamp_in_seconds, state_plus, biases);
+        	open_vins_estimator.get_propagator()->fast_state_propagate(state, timestamp_in_seconds, state_plus, imu_raw_data);
 
-			_m_imu_biases->put(biases);
+			_m_imu_raw->put(imu_raw_data);
 		}
 
 		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
@@ -319,7 +317,7 @@ public:
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
-	std::unique_ptr<writer<imu_biases_type>> _m_imu_biases;
+	std::unique_ptr<writer<imu_raw_type>> _m_imu_raw;
 	time_type _m_begin;
 	State *state;
 

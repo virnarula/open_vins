@@ -116,8 +116,7 @@ void Propagator::propagate_and_clone(State* state, double timestamp) {
 
 
 
-// We add an optional param because we want to do integration with interpolated IMU values past the available cam images
-void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, ILLIXR::imu_biases_type *biases) {
+void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, ILLIXR::imu_raw_type *biases) {
 
     // Set the last time offset value if we have just started the system up
     if(!have_last_prop_time_offset) {
