@@ -80,14 +80,16 @@ namespace ov_msckf {
          * This allows for visual checking that everything was loaded properly from ROS/CMD parsers.
          */
         void print_estimator() {
-            printf("ESTIMATOR PARAMETERS:\n");
-            state_options.print();
-            printf("\t- gravity: %.3f, %.3f, %.3f\n", gravity(0), gravity(1), gravity(2));
-            printf("\t- gravity: %.1f\n", dt_slam_delay);
-            printf("\t- init_window_time: %.2f\n", init_window_time);
-            printf("\t- init_imu_thresh: %.2f\n", init_imu_thresh);
-            printf("\t- record timing?: %d\n", (int)record_timing_information);
-            printf("\t- record timing filepath: %s\n", record_timing_filepath.c_str());
+            #ifndef NDEBUG
+                printf("ESTIMATOR PARAMETERS:\n");
+                state_options.print();
+                printf("\t- gravity: %.3f, %.3f, %.3f\n", gravity(0), gravity(1), gravity(2));
+                printf("\t- gravity: %.1f\n", dt_slam_delay);
+                printf("\t- init_window_time: %.2f\n", init_window_time);
+                printf("\t- init_imu_thresh: %.2f\n", init_imu_thresh);
+                printf("\t- record timing?: %d\n", (int)record_timing_information);
+                printf("\t- record timing filepath: %s\n", record_timing_filepath.c_str());
+            #endif
         }
 
         // NOISE / CHI2 ============================
@@ -109,14 +111,16 @@ namespace ov_msckf {
          * This allows for visual checking that everything was loaded properly from ROS/CMD parsers.
          */
         void print_noise() {
-            printf("NOISE PARAMETERS:\n");
-            imu_noises.print();
-            printf("\tUpdater MSCKF Feats:\n");
-            msckf_options.print();
-            printf("\tUpdater SLAM Feats:\n");
-            slam_options.print();
-            printf("\tUpdater ARUCO Tags:\n");
-            aruco_options.print();
+            #ifndef NDEBUG
+                printf("NOISE PARAMETERS:\n");
+                imu_noises.print();
+                printf("\tUpdater MSCKF Feats:\n");
+                msckf_options.print();
+                printf("\tUpdater SLAM Feats:\n");
+                slam_options.print();
+                printf("\tUpdater ARUCO Tags:\n");
+                aruco_options.print();
+            #endif
         }
 
         // STATE DEFAULTS ==========================
@@ -141,20 +145,27 @@ namespace ov_msckf {
          * This allows for visual checking that everything was loaded properly from ROS/CMD parsers.
          */
         void print_state() {
-            printf("STATE PARAMETERS:\n");
-            printf("\t- calib_camimu_dt: %.4f\n", calib_camimu_dt);
+            #ifndef NDEBUG
+                printf("STATE PARAMETERS:\n");
+                printf("\t- calib_camimu_dt: %.4f\n", calib_camimu_dt);
+            #endif
+
             assert(state_options.num_cameras==(int)camera_fisheye.size());
             for(int n=0; n<state_options.num_cameras; n++) {
-                std::cout << "cam_" << n << "_fisheye:" << camera_fisheye.at(n) << std::endl;
-                std::cout << "cam_" << n << "_wh:" << endl << camera_wh.at(n).first << " x " << camera_wh.at(n).second << std::endl;
-                std::cout << "cam_" << n << "_intrinsic(0:3):" << endl << camera_intrinsics.at(n).block(0,0,4,1).transpose() << std::endl;
-                std::cout << "cam_" << n << "_intrinsic(4:7):" << endl << camera_intrinsics.at(n).block(4,0,4,1).transpose() << std::endl;
-                std::cout << "cam_" << n << "_extrinsic(0:3):" << endl << camera_extrinsics.at(n).block(0,0,4,1).transpose() << std::endl;
-                std::cout << "cam_" << n << "_extrinsic(4:6):" << endl << camera_extrinsics.at(n).block(4,0,3,1).transpose() << std::endl;
+                #ifndef NDEBUG
+                    std::cout << "cam_" << n << "_fisheye:" << camera_fisheye.at(n) << std::endl;
+                    std::cout << "cam_" << n << "_wh:" << endl << camera_wh.at(n).first << " x " << camera_wh.at(n).second << std::endl;
+                    std::cout << "cam_" << n << "_intrinsic(0:3):" << endl << camera_intrinsics.at(n).block(0,0,4,1).transpose() << std::endl;
+                    std::cout << "cam_" << n << "_intrinsic(4:7):" << endl << camera_intrinsics.at(n).block(4,0,4,1).transpose() << std::endl;
+                    std::cout << "cam_" << n << "_extrinsic(0:3):" << endl << camera_extrinsics.at(n).block(0,0,4,1).transpose() << std::endl;
+                    std::cout << "cam_" << n << "_extrinsic(4:6):" << endl << camera_extrinsics.at(n).block(4,0,3,1).transpose() << std::endl;
+                #endif
                 Eigen::Matrix4d T_CtoI = Eigen::Matrix4d::Identity();
                 T_CtoI.block(0,0,3,3) = quat_2_Rot(camera_extrinsics.at(n).block(0,0,4,1)).transpose();
                 T_CtoI.block(0,3,3,1) = -T_CtoI.block(0,0,3,3)*camera_extrinsics.at(n).block(4,0,3,1);
-                std::cout << "T_C" << n << "toI:" << endl << T_CtoI << std::endl << std::endl;
+                #ifndef NDEBUG
+                    std::cout << "T_C" << n << "toI:" << endl << T_CtoI << std::endl << std::endl;
+                #endif
             }
         }
 
@@ -197,9 +208,11 @@ namespace ov_msckf {
          * @brief This function will print out all parameters releated to our visual trackers.
          */
         void print_trackers() {
-            printf("FEATURE TRACKING PARAMETERS:\n");
-            printf("\t- num_pts: %d\n", num_pts);
-            printf("\t- use_stereo: %d\n", use_stereo);
+            #ifndef NDEBUG
+                printf("FEATURE TRACKING PARAMETERS:\n");
+                printf("\t- num_pts: %d\n", num_pts);
+                printf("\t- use_stereo: %d\n", use_stereo);
+            #endif
             featinit_options.print();
         }
 
