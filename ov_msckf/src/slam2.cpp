@@ -259,14 +259,6 @@ public:
 		Eigen::Vector4d quat = state->_imu->quat();
 		Eigen::Vector3d pose = state->_imu->pos();
 
-		_m_imu_integrator_input->put(new imu_integrator_input{
-			.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
-			.last_cam_integration_time = buffer_timestamp_seconds,
-			.imu_value = state->_imu->value(),
-			.imu_fej = state->_imu->fej(),
-			.gravity = open_vins_estimator.get_propagator()->get_gravity(),
-		});
-
 		Eigen::Vector3f swapped_pos = Eigen::Vector3f{float(pose(0)), float(pose(1)), float(pose(2))};
 		Eigen::Quaternionf swapped_rot = Eigen::Quaternionf{float(quat(3)), float(quat(0)), float(quat(1)), float(quat(2))};
 
@@ -287,6 +279,15 @@ public:
 				.sensor_time = imu_cam_buffer->time,
 				.position = swapped_pos,
 				.orientation = swapped_rot,
+			});
+
+			_m_imu_integrator_input->put(new imu_integrator_input{
+				.slam_ready = true,
+				.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
+				.last_cam_integration_time = buffer_timestamp_seconds,
+				.imu_value = state->_imu->value(),
+				.imu_fej = state->_imu->fej(),
+				.gravity = open_vins_estimator.get_propagator()->get_gravity(),
 			});
 		}
 
