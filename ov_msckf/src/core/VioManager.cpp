@@ -611,7 +611,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 #ifndef NDEBUG
     // Debug for camera imu offset
     if(state->_options.do_calib_camera_timeoffset) {
-        printf("camera-imu timeoffset = %.5f\n",state->_calib_dt_CAMtoIMU->value()(0));
+        // printf("camera-imu timeoffset = %.5f\n",state->_calib_dt_CAMtoIMU->value()(0));
     }
 #endif
 
@@ -620,9 +620,9 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     if(state->_options.do_calib_camera_intrinsics) {
         for(int i=0; i<state->_options.num_cameras; i++) {
             Vec* calib = state->_cam_intrinsics.at(i);
-            printf("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
-                     calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
-                     calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
+            // printf("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
+            //          calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
+            //          calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
         }
     }
 #endif
@@ -632,9 +632,9 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     if(state->_options.do_calib_camera_pose) {
         for(int i=0; i<state->_options.num_cameras; i++) {
             PoseJPL* calib = state->_calib_IMUtoCAM.at(i);
-            printf("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
-                     calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
-                     calib->pos()(0),calib->pos()(1),calib->pos()(2));
+            // printf("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
+            //          calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
+            //          calib->pos()(0),calib->pos()(1),calib->pos()(2));
         }
     }
 #endif
