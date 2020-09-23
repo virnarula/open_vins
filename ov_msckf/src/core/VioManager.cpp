@@ -539,15 +539,15 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 
 #ifndef NDEBUG
     // Timing information
-    // printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
-    // printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, time_prop);
-    // printf(BLUE "[TIME]: %.4f seconds for MSCKF update (%d features)\n" RESET, time_msckf, (int)featsup_MSCKF.size());
+    printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
+    printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, time_prop);
+    printf(BLUE "[TIME]: %.4f seconds for MSCKF update (%d features)\n" RESET, time_msckf, (int)featsup_MSCKF.size());
     if(state->_options.max_slam_features > 0) {
-        // printf(BLUE "[TIME]: %.4f seconds for SLAM update (%d feats)\n" RESET, time_slam_update, (int)feats_slam_UPDATE.size());
-        // printf(BLUE "[TIME]: %.4f seconds for SLAM delayed init (%d feats)\n" RESET, time_slam_delay, (int)feats_slam_DELAYED.size());
+        printf(BLUE "[TIME]: %.4f seconds for SLAM update (%d feats)\n" RESET, time_slam_update, (int)feats_slam_UPDATE.size());
+        printf(BLUE "[TIME]: %.4f seconds for SLAM delayed init (%d feats)\n" RESET, time_slam_delay, (int)feats_slam_DELAYED.size());
     }
-    // printf(BLUE "[TIME]: %.4f seconds for marginalization (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
-    // printf(BLUE "[TIME]: %.4f seconds for total\n" RESET, time_total);
+    printf(BLUE "[TIME]: %.4f seconds for marginalization (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
+    printf(BLUE "[TIME]: %.4f seconds for total\n" RESET, time_total);
 #endif
 
     // Finally if we are saving stats to file, lets save it to file
@@ -599,15 +599,9 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     if(state->_options.do_calib_camera_intrinsics) {
         for(int i=0; i<state->_options.num_cameras; i++) {
             Vec* calib = state->_cam_intrinsics.at(i);
-<<<<<<< HEAD
-                printf("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
-                        calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
-                        calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
-=======
-            // printf("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
-            //          calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
-            //          calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
->>>>>>> 2c125b8... MTP fix is done?
+            printf("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
+                     calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
+                     calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
         }
     }
 #endif
@@ -617,15 +611,9 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     if(state->_options.do_calib_camera_pose) {
         for(int i=0; i<state->_options.num_cameras; i++) {
             PoseJPL* calib = state->_calib_IMUtoCAM.at(i);
-<<<<<<< HEAD
-                printf("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
-                        calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
-                        calib->pos()(0),calib->pos()(1),calib->pos()(2));
-=======
-            // printf("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
-            //          calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
-            //          calib->pos()(0),calib->pos()(1),calib->pos()(2));
->>>>>>> 2c125b8... MTP fix is done?
+            printf("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
+                     calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
+                     calib->pos()(0),calib->pos()(1),calib->pos()(2));
         }
     }
 #endif
