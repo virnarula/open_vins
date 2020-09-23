@@ -182,6 +182,11 @@ namespace ov_msckf {
         void fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, ILLIXR::imu_raw_type *imu_raw);
 
 
+        Eigen::Matrix<double, 3, 1> get_gravity() {
+            return _gravity;
+        }
+
+
         /**
          * @brief Helper function that given current imu data, will select imu readings between the two times.
          *

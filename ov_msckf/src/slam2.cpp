@@ -264,7 +264,7 @@ public:
 			.last_cam_integration_time = buffer_timestamp_seconds,
 			.imu_value = state->_imu->value(),
 			.imu_fej = state->_imu->fej(),
-			.gravity = open_vins_estimator.get_propagator()->_gravity,
+			.gravity = open_vins_estimator.get_propagator()->get_gravity(),
 		});
 
 		Eigen::Vector3f swapped_pos = Eigen::Vector3f{float(pose(0)), float(pose(1)), float(pose(2))};
