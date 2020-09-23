@@ -159,8 +159,12 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
             // Compute the new state mean value
             Eigen::Vector4d new_q;
             Eigen::Vector3d new_v, new_p;
-            if(state->_options.use_rk4_integration) predict_mean_rk4(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
-            else predict_mean_discrete(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
+            if(state->_options.use_rk4_integration) {
+                predict_mean_rk4(state->_imu->quat(), state->_imu->pos(), state->_imu->vel(), _gravity,
+                                dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
+            } else {
+                predict_mean_discrete(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
+            }
 
             //Now replace imu estimate and fej with propagated values
             Eigen::Matrix<double,16,1> imu_x = state->_imu->value();
@@ -314,8 +318,13 @@ void Propagator::predict_and_compute(State *state, const IMUDATA data_minus, con
     // Compute the new state mean value
     Eigen::Vector4d new_q;
     Eigen::Vector3d new_v, new_p;
-    if(state->_options.use_rk4_integration) predict_mean_rk4(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
-    else predict_mean_discrete(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
+    
+    if(state->_options.use_rk4_integration) {
+        predict_mean_rk4(state->_imu->quat(), state->_imu->pos(), state->_imu->vel(), _gravity,
+                        dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
+    } else {
+        predict_mean_discrete(state, dt, w_hat, a_hat, w_hat2, a_hat2, new_q, new_v, new_p);
+    }
 
     // Get the locations of each entry of the imu state
     int th_id = state->_imu->q()->id()-state->_imu->id();
@@ -445,7 +454,8 @@ void Propagator::predict_mean_discrete(State *state, double dt,
 
 
 
-void Propagator::predict_mean_rk4(State *state, double dt,
+void Propagator::predict_mean_rk4(Eigen::Vector4d quat, Eigen::Vector3d pos, Eigen::Vector3d vel, 
+                                  Eigen::Matrix<double, 3, 1> _gravity, double dt,
                                   const Eigen::Vector3d &w_hat1, const Eigen::Vector3d &a_hat1,
                                   const Eigen::Vector3d &w_hat2, const Eigen::Vector3d &a_hat2,
                                   Eigen::Vector4d &new_q, Eigen::Vector3d &new_v, Eigen::Vector3d &new_p) {
@@ -457,9 +467,9 @@ void Propagator::predict_mean_rk4(State *state, double dt,
     Eigen::Vector3d a_jerk = (a_hat2-a_hat1)/dt;
 
     // y0 ================
-    Eigen::Vector4d q_0 = state->_imu->quat();
-    Eigen::Vector3d p_0 = state->_imu->pos();
-    Eigen::Vector3d v_0 = state->_imu->vel();
+    Eigen::Vector4d q_0 = quat;
+    Eigen::Vector3d p_0 = pos;
+    Eigen::Vector3d v_0 = vel;
 
     // k1 ================
     Eigen::Vector4d dq_0 = {0,0,0,1};

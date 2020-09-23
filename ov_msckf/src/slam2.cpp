@@ -182,10 +182,9 @@ public:
 		: plugin{name_, pb_}
 		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
+		, _m_imu_integrator_input{sb->publish<imu_integrator_input>("imu_integrator_input")}
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
-		_m_ov_estimator = sb->publish<ov_estimator>("ov_estimator");
-		_m_imu_integrator = sb->publish<imu_integrator_input>("imu_integrator_in");
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
@@ -230,13 +229,6 @@ public:
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
 
-		// Here increase the sequence count for imu_integrator to trigger it
-		auto imu_integrator_params = new imu_integrator_input{
-			.seq = static_cast<int>(++_imu_integrator_seq),
-			.time = datum->time,
-		};
-		_m_imu_integrator->put(imu_integrator_params);
-
 		// If there is not cam data this func call, break early
 		if (!datum->img0.has_value() && !datum->img1.has_value()) {
 			return;
@@ -267,6 +259,14 @@ public:
 		Eigen::Vector4d quat = state->_imu->quat();
 		Eigen::Vector3d pose = state->_imu->pos();
 
+		_m_imu_integrator_input->put(new imu_integrator_input{
+			.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
+			.last_cam_integration_time = buffer_timestamp_seconds,
+			.imu_value = state->_imu->value(),
+			.imu_fej = state->_imu->fej(),
+			.gravity = open_vins_estimator.get_propagator()->_gravity,
+		});
+
 		Eigen::Vector3f swapped_pos = Eigen::Vector3f{float(pose(0)), float(pose(1)), float(pose(2))};
 		Eigen::Quaternionf swapped_rot = Eigen::Quaternionf{float(quat(3)), float(quat(0)), float(quat(1)), float(quat(2))};
 
@@ -281,7 +281,6 @@ public:
 		if (open_vins_estimator.initialized()) {
 			if (isUninitialized) {
 				isUninitialized = false;
-				_m_ov_estimator->put(&open_vins_estimator);
 			}
 
 			_m_pose->put(new pose_type{
@@ -306,8 +305,8 @@ public:
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
-	std::unique_ptr<writer<ov_estimator> _m_ov_estimator;
-	std::unique_ptr<writer<imu_integrator_input>> _m_imu_integrator;
+	std::unique_ptr<writer<imu_integrator_input>> _m_imu_integrator_input;
+
 	time_type _m_begin;
 	State *state;
 
@@ -317,7 +316,6 @@ private:
 	const imu_cam_type* imu_cam_buffer;
 	double previous_timestamp = 0.0;
 	bool isUninitialized = true;
-	long long _imu_integrator_seq{0};
 };
 
 PLUGIN_MAIN(slam2)
