@@ -218,41 +218,6 @@ namespace ov_msckf {
             return data;
         }
 
-                /**
-         * @brief RK4 imu mean propagation.
-         *
-         * See this wikipedia page on [Runge-Kutta Methods](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods).
-         * We are doing a RK4 method, [this wolframe page](http://mathworld.wolfram.com/Runge-KuttaMethod.html) has the forth order equation defined below.
-         * We define function \f$ f(t,y) \f$ where y is a function of time t, see @ref imu_kinematic for the definition of the continous-time functions.
-         *
-         * \f{align*}{
-         * {k_1} &= f({t_0}, y_0) \Delta t  \\
-         * {k_2} &= f( {t_0}+{\Delta t \over 2}, y_0 + {1 \over 2}{k_1} ) \Delta t \\
-         * {k_3} &= f( {t_0}+{\Delta t \over 2}, y_0 + {1 \over 2}{k_2} ) \Delta t \\
-         * {k_4} &= f( {t_0} + {\Delta t}, y_0 + {k_3} ) \Delta t \\
-         * y_{0+\Delta t} &= y_0 + \left( {{1 \over 6}{k_1} + {1 \over 3}{k_2} + {1 \over 3}{k_3} + {1 \over 6}{k_4}} \right)
-         * \f}
-         *
-         * @param quat Rotation in quaternions of the pose
-         * @param pos Position of the pose
-         * @param vel Velocity of the pose
-         * @param dt Time we should integrate over
-         * @param w_hat1 Angular velocity with bias removed
-         * @param a_hat1 Linear acceleration with bias removed
-         * @param w_hat2 Next angular velocity with bias removed
-         * @param a_hat2 Next linear acceleration with bias removed
-         * @param new_q The resulting new orientation after integration
-         * @param new_v The resulting new velocity after integration
-         * @param new_p The resulting new position after integration
-         */
-        static void predict_mean_rk4(Eigen::Vector4d quat, Eigen::Vector3d pos, Eigen::Vector3d vel, 
-                              Eigen::Matrix<double, 3, 1> _gravity, double dt,
-                              const Eigen::Vector3d &w_hat1, const Eigen::Vector3d &a_hat1,
-                              const Eigen::Vector3d &w_hat2, const Eigen::Vector3d &a_hat2,
-                              Eigen::Vector4d &new_q, Eigen::Vector3d &new_v, Eigen::Vector3d &new_p);
-
-        /// Gravity vector
-        Eigen::Matrix<double, 3, 1> _gravity;
 
     protected:
 
@@ -310,7 +275,35 @@ namespace ov_msckf {
                                    const Eigen::Vector3d &w_hat2, const Eigen::Vector3d &a_hat2,
                                    Eigen::Vector4d &new_q, Eigen::Vector3d &new_v, Eigen::Vector3d &new_p);
 
-
+        /**
+         * @brief RK4 imu mean propagation.
+         *
+         * See this wikipedia page on [Runge-Kutta Methods](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods).
+         * We are doing a RK4 method, [this wolframe page](http://mathworld.wolfram.com/Runge-KuttaMethod.html) has the forth order equation defined below.
+         * We define function \f$ f(t,y) \f$ where y is a function of time t, see @ref imu_kinematic for the definition of the continous-time functions.
+         *
+         * \f{align*}{
+         * {k_1} &= f({t_0}, y_0) \Delta t  \\
+         * {k_2} &= f( {t_0}+{\Delta t \over 2}, y_0 + {1 \over 2}{k_1} ) \Delta t \\
+         * {k_3} &= f( {t_0}+{\Delta t \over 2}, y_0 + {1 \over 2}{k_2} ) \Delta t \\
+         * {k_4} &= f( {t_0} + {\Delta t}, y_0 + {k_3} ) \Delta t \\
+         * y_{0+\Delta t} &= y_0 + \left( {{1 \over 6}{k_1} + {1 \over 3}{k_2} + {1 \over 3}{k_3} + {1 \over 6}{k_4}} \right)
+         * \f}
+         *
+         * @param state Pointer to state
+         * @param dt Time we should integrate over
+         * @param w_hat1 Angular velocity with bias removed
+         * @param a_hat1 Linear acceleration with bias removed
+         * @param w_hat2 Next angular velocity with bias removed
+         * @param a_hat2 Next linear acceleration with bias removed
+         * @param new_q The resulting new orientation after integration
+         * @param new_v The resulting new velocity after integration
+         * @param new_p The resulting new position after integration
+         */
+        void predict_mean_rk4(State *state, double dt,
+                              const Eigen::Vector3d &w_hat1, const Eigen::Vector3d &a_hat1,
+                              const Eigen::Vector3d &w_hat2, const Eigen::Vector3d &a_hat2,
+                              Eigen::Vector4d &new_q, Eigen::Vector3d &new_v, Eigen::Vector3d &new_p);
 
 
         /// Container for the noise values
@@ -318,6 +311,10 @@ namespace ov_msckf {
 
         /// Our history of IMU messages (time, angular, linear)
         std::vector<IMUDATA> imu_data;
+
+        /// Gravity vector
+        Eigen::Matrix<double, 3, 1> _gravity;
+
 
     };
 
