@@ -284,7 +284,7 @@ public:
 			_m_imu_integrator_input->put(new imu_integrator_input{
 				.slam_ready = true,
 				.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
-				.last_cam_integration_time = buffer_timestamp_seconds,
+				.last_cam_integration_time = timestamp_in_seconds,
 				.imu_value = state->_imu->value(),
 				.imu_fej = state->_imu->fej(),
 				.gravity = open_vins_estimator.get_propagator()->get_gravity(),
