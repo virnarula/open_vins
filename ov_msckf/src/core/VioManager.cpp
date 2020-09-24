@@ -576,26 +576,26 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     }
     timelastupdate = timestamp;
 
-    // Debug, print our current state
-    #ifndef NDEBUG
-        printf("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
-                state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3),
-                state->_imu->pos()(0),state->_imu->pos()(1),state->_imu->pos()(2),distance);
-        printf("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
-                state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2),
-                state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
-    #endif
-
-
-    // Debug for camera imu offset
 #ifndef NDEBUG
+    // Debug, print our current state
+    printf("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
+            state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3),
+            state->_imu->pos()(0),state->_imu->pos()(1),state->_imu->pos()(2),distance);
+    printf("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
+             state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2),
+             state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
+#endif
+
+
+#ifndef NDEBUG
+    // Debug for camera imu offset
     if(state->_options.do_calib_camera_timeoffset) {
         printf("camera-imu timeoffset = %.5f\n",state->_calib_dt_CAMtoIMU->value()(0));
     }
 #endif
 
-    // Debug for camera intrinsics
 #ifndef NDEBUG
+    // Debug for camera intrinsics
     if(state->_options.do_calib_camera_intrinsics) {
         for(int i=0; i<state->_options.num_cameras; i++) {
             Vec* calib = state->_cam_intrinsics.at(i);
@@ -606,8 +606,8 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     }
 #endif
 
-    // Debug for camera extrinsics
 #ifndef NDEBUG
+    // Debug for camera extrinsics
     if(state->_options.do_calib_camera_pose) {
         for(int i=0; i<state->_options.num_cameras; i++) {
             PoseJPL* calib = state->_calib_IMUtoCAM.at(i);
