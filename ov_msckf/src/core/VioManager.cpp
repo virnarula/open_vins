@@ -605,10 +605,7 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     printf("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
              state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2),
              state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
-<<<<<<< HEAD
 #endif
-=======
->>>>>>> Add back prints
 
 
 #ifndef NDEBUG
