@@ -35,7 +35,7 @@ endif()
 # http://stackoverflow.com/a/25836953
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
-if(COMPILER_SUPPORTS_CXX11)
+if(COMPILER_SUPPORTS_CXX17)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
@@ -98,8 +98,8 @@ target_include_directories(ov_msckf_lib PUBLIC src)
 # Make binary files!
 ##################################################
 
-add_executable(run_simulation src/run_simulation.cpp)
-target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
+# add_executable(run_simulation src/run_simulation.cpp)
+# target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
 
 add_library(slam2 SHARED src/slam2.cpp)
 target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
@@ -109,5 +109,3 @@ target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
 
 #add_executable(test_sim_repeat src/test_sim_repeat.cpp)
 #target_link_libraries(test_sim_repeat ov_msckf_lib ${thirdparty_libraries})
-
-

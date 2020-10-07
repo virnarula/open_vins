@@ -33,7 +33,7 @@ endif()
 # http://stackoverflow.com/a/25836953
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
-if(COMPILER_SUPPORTS_CXX11)
+if(COMPILER_SUPPORTS_CXX17)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
@@ -89,7 +89,5 @@ if (catkin_FOUND)
 endif()
 
 
-add_executable(test_webcam src/test_webcam.cpp)
-target_link_libraries(test_webcam ov_core_lib ${thirdparty_libraries})
-
-
+# add_executable(test_webcam src/test_webcam.cpp)
+# target_link_libraries(test_webcam ov_core_lib ${thirdparty_libraries})

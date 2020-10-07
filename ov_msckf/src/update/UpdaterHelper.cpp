@@ -422,7 +422,7 @@ void UpdaterHelper::get_feature_jacobian_full(State* state, UpdaterHelperFeature
     UpdaterHelper::get_feature_jacobian_representation(state, feature, dpfg_dlambda, dpfg_dx, dpfg_dx_order);
 
     // Assert that all the ones in our order are already in our local jacobian mapping
-    for(auto &type : dpfg_dx_order) {
+    for([[maybe_unused]] auto &type : dpfg_dx_order) {
         assert(map_hx.find(type)!=map_hx.end());
     }
 
