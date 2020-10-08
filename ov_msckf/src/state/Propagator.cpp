@@ -185,7 +185,9 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
     state_plus.block(7,0,3,1) = state->_imu->vel();    
     if(prop_data.size() > 1) state_plus.block(10,0,3,1) = prop_data.at(prop_data.size()-2).wm - state->_imu->bias_g();
     else if(!prop_data.empty()) state_plus.block(10,0,3,1) = prop_data.at(prop_data.size()-1).wm - state->_imu->bias_g();
-    imu_raw->state_plus = state_plus;
+    imu_raw->quat = state->_imu->quat();
+    imu_raw->pos = state->_imu->pos();
+    imu_raw->vel = state->_imu->vel();    
 
     // Finally replace the imu with the original state we had
     state->_imu->set_value(orig_val);
