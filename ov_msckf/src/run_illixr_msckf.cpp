@@ -36,12 +36,12 @@ using namespace ov_msckf;
 VioManager* sys;
 
 struct vel_acc_vector {
-	double x, y, z;
+  double x, y, z;
 };
 
 struct imu_data {
-	vel_acc_vector angular_velocity;
-	vel_acc_vector linear_acceleration;
+  vel_acc_vector angular_velocity;
+  vel_acc_vector linear_acceleration;
 };
 
 VioManagerOptions create_params()
@@ -131,12 +131,12 @@ VioManagerOptions create_params()
 }
 
 void load_images(const string &file_name, unordered_map<double, string> &rgb_images,
-				 vector<double> &timestamps) {
-	ifstream file_in;
+         vector<double> &timestamps) {
+  ifstream file_in;
     file_in.open(file_name.c_str());
-	// skip first line
-	string s;
-	getline(file_in, s);
+  // skip first line
+  string s;
+  getline(file_in, s);
     while (!file_in.eof()) {
         getline(file_in, s);
         if (!s.empty()) {
@@ -147,7 +147,7 @@ void load_images(const string &file_name, unordered_map<double, string> &rgb_ima
             ss >> t;
             timestamps.push_back(t);
             ss >> rgb_image;
-			rgb_image.erase(std::remove(rgb_image.begin(), rgb_image.end(), ','), rgb_image.end());
+      rgb_image.erase(std::remove(rgb_image.begin(), rgb_image.end(), ','), rgb_image.end());
             rgb_images[t] = rgb_image;
         }
     }
@@ -155,32 +155,32 @@ void load_images(const string &file_name, unordered_map<double, string> &rgb_ima
 }
 
 void load_imu_data(const string &file_name, unordered_map<double, imu_data> &imu_data_vals,
-				   vector<double> &timestamps) {
-	ifstream file_in;
+           vector<double> &timestamps) {
+  ifstream file_in;
     file_in.open(file_name.c_str());
-	// skip first line
-	string s;
-	getline(file_in, s);
+  // skip first line
+  string s;
+  getline(file_in, s);
     while (!file_in.eof()) {
         getline(file_in, s);
         if (!s.empty()) {
             stringstream ss(s);
-			string word;
-			vector<double> line;
-			while (getline(ss, word, ',')) {
-				line.push_back(stod(word));
-			}
+      string word;
+      vector<double> line;
+      while (getline(ss, word, ',')) {
+        line.push_back(stod(word));
+      }
 
-			imu_data imu_vals;
-			double t = line[0];
-			timestamps.push_back(t);
-			imu_vals.angular_velocity.x = line[1];
-			imu_vals.angular_velocity.y = line[2];
-			imu_vals.angular_velocity.z = line[3];
-			imu_vals.linear_acceleration.x = line[4];
-			imu_vals.linear_acceleration.y = line[5];
-			imu_vals.linear_acceleration.z = line[6];
-			imu_data_vals[t] = imu_vals;
+      imu_data imu_vals;
+      double t = line[0];
+      timestamps.push_back(t);
+      imu_vals.angular_velocity.x = line[1];
+      imu_vals.angular_velocity.y = line[2];
+      imu_vals.angular_velocity.z = line[3];
+      imu_vals.linear_acceleration.x = line[4];
+      imu_vals.linear_acceleration.y = line[5];
+      imu_vals.linear_acceleration.z = line[6];
+      imu_data_vals[t] = imu_vals;
 
         }
     }
@@ -189,37 +189,37 @@ void load_imu_data(const string &file_name, unordered_map<double, imu_data> &imu
 // Main function
 int main(int argc, char** argv) {
 
-	if (argc != 6) {
-		cerr << "Usage: ./run_serial_msckf path_to_cam0 path_to_cam1 path_to_imu0 path_to_cam0_images path_to_cam1_images" << endl;
-		return 1;
-	}
+  if (argc != 6) {
+    cerr << "Usage: ./run_serial_msckf path_to_cam0 path_to_cam1 path_to_imu0 path_to_cam0_images path_to_cam1_images" << endl;
+    return 1;
+  }
 
-	//vector<string> cam0_images;
-	unordered_map<double, string> cam0_images;
-	//vector<string> cam1_images;
-	unordered_map<double, string> cam1_images;
-	unordered_map<double, imu_data> imu0_vals;
+  //vector<string> cam0_images;
+  unordered_map<double, string> cam0_images;
+  //vector<string> cam1_images;
+  unordered_map<double, string> cam1_images;
+  unordered_map<double, imu_data> imu0_vals;
     vector<double> cam0_timestamps;
-	vector<double> cam1_timestamps;
-	vector<double> imu0_timestamps;
-	string cam0_filename = string(argv[1]);
-	string cam1_filename = string(argv[2]);
-	string imu0_filename = string(argv[3]);
-	string cam0_images_path = string(argv[4]);
-	string cam1_images_path = string(argv[5]);
-	
-	load_images(cam0_filename, cam0_images, cam0_timestamps);
-	load_images(cam1_filename, cam1_images, cam1_timestamps);
-	load_imu_data(imu0_filename, imu0_vals, imu0_timestamps);
+  vector<double> cam1_timestamps;
+  vector<double> imu0_timestamps;
+  string cam0_filename = string(argv[1]);
+  string cam1_filename = string(argv[2]);
+  string imu0_filename = string(argv[3]);
+  string cam0_images_path = string(argv[4]);
+  string cam1_images_path = string(argv[5]);
+  
+  load_images(cam0_filename, cam0_images, cam0_timestamps);
+  load_images(cam1_filename, cam1_images, cam1_timestamps);
+  load_imu_data(imu0_filename, imu0_vals, imu0_timestamps);
 
 
-	cout << "cam0 images: " << cam0_images.size() << "  cam1 images: " << cam1_images.size() << "  imu0 data: " << imu0_vals.size() << endl;
-	if (cam0_images.size() != cam1_images.size()) {
-		cerr << "Mismatched number of cam0 and cam1 images!" << endl;
-		return 1;
-	}
+  cout << "cam0 images: " << cam0_images.size() << "  cam1 images: " << cam1_images.size() << "  imu0 data: " << imu0_vals.size() << endl;
+  if (cam0_images.size() != cam1_images.size()) {
+    cerr << "Mismatched number of cam0 and cam1 images!" << endl;
+    return 1;
+  }
 
-	cout << "Finished Loading Data!!!!" << endl;
+  cout << "Finished Loading Data!!!!" << endl;
     // Create our VIO system
     auto params = create_params();
     sys = new VioManager(params);
@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
 
     // Read in what mode we should be processing in (1=mono, 2=stereo)
     int max_cameras;
-	max_cameras = 2; // max_cameras
+  max_cameras = 2; // max_cameras
 
     // Buffer variables for our system (so we always have imu to use)
     bool has_left = false;
@@ -237,11 +237,11 @@ int main(int argc, char** argv) {
     cv::Mat img0, img1;
     cv::Mat img0_buffer, img1_buffer;
     double time = 0.0;
-	double time_buffer = 0.0;
+  double time_buffer = 0.0;
 
-	// Load groundtruth if we have it
+  // Load groundtruth if we have it
     std::map<double, Eigen::Matrix<double, 17, 1>> gt_states;
-	// TODO: Figure out if ground truth reading is needed
+  // TODO: Figure out if ground truth reading is needed
     // if (nh.hasParam("path_gt")) {
     //     std::string path_to_gt;
     //     nh.param<std::string>("path_gt", path_to_gt, "");
@@ -249,14 +249,14 @@ int main(int argc, char** argv) {
     //     ROS_INFO("gt file path is: %s", path_to_gt.c_str());
     // }
 
-	// Loop through data files (camera and imu)
+  // Loop through data files (camera and imu)
     unsigned num_images = 0;
-	for (auto timem : imu0_timestamps) {
+  for (auto timem : imu0_timestamps) {
 
         // Handle IMU measurement
-		if (imu0_vals.find(timem) != imu0_vals.end()) {
+    if (imu0_vals.find(timem) != imu0_vals.end()) {
             // convert into correct format
-			imu_data m = imu0_vals.at(timem);
+      imu_data m = imu0_vals.at(timem);
             Eigen::Matrix<double, 3, 1> wm, am;
             wm << m.angular_velocity.x, m.angular_velocity.y, m.angular_velocity.z;
             am << m.linear_acceleration.x, m.linear_acceleration.y, m.linear_acceleration.z;
@@ -265,33 +265,33 @@ int main(int argc, char** argv) {
         }
 
         // Handle LEFT camera
-		if (cam0_images.find(timem) != cam0_images.end()) {
+    if (cam0_images.find(timem) != cam0_images.end()) {
             // Get the image
-			img0 = cv::imread(cam0_images_path+ "/" +cam0_images.at(timem), cv::IMREAD_COLOR);
-			cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
-			if (img0.empty()) {
-				cerr << endl << "Failed to load image at: "
-					 << cam0_images_path << "/" << cam0_images.at(timem) << endl;
-				return 1;
-			}
+      img0 = cv::imread(cam0_images_path+ "/" +cam0_images.at(timem), cv::IMREAD_COLOR);
+      cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
+      if (img0.empty()) {
+        cerr << endl << "Failed to load image at: "
+           << cam0_images_path << "/" << cam0_images.at(timem) << endl;
+        return 1;
+      }
 
-			// Save to our temp variable
+      // Save to our temp variable
             has_left = true;
-			time = timem/1000000000.0;
+      time = timem/1000000000.0;
         }
 
         // Handle RIGHT camera
-		if (cam1_images.find(timem) != cam1_images.end()) {
+    if (cam1_images.find(timem) != cam1_images.end()) {
             // Get the image
-			img1 = cv::imread(cam1_images_path+ "/" +cam1_images.at(timem), cv::IMREAD_COLOR);
-			cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
-			if (img1.empty()) {
-				cerr << endl << "Failed to load image at: "
-					 << cam1_images_path << "/" << cam1_images.at(timem) << endl;
-				return 1;
-			}
+      img1 = cv::imread(cam1_images_path+ "/" +cam1_images.at(timem), cv::IMREAD_COLOR);
+      cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
+      if (img1.empty()) {
+        cerr << endl << "Failed to load image at: "
+           << cam1_images_path << "/" << cam1_images.at(timem) << endl;
+        return 1;
+      }
 
-			//cout << "img1 Height: " << img1.rows << "   Width: " << img1.cols << endl;
+      //cout << "img1 Height: " << img1.rows << "   Width: " << img1.cols << endl;
 
             // Save to our temp variable (use a right image that is near in time)
             // TODO: fix this logic as the left will still advance instead of waiting
@@ -389,7 +389,7 @@ int main(int argc, char** argv) {
     delete sys;
 
     // // Done!
-	cout << "DONE!" << endl;
+  cout << "DONE!" << endl;
     return EXIT_SUCCESS;
 }
 
