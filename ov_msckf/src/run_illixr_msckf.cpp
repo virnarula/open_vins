@@ -20,19 +20,11 @@
  */
 
 
-#include <ros/ros.h>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/Imu.h>
-#include <std_msgs/Float64.h>
-#include <cv_bridge/cv_bridge.h>
 #include <opencv/cv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
 #include "core/VioManager.h"
-#include "core/RosVisualizer.h"
 #include "utils/dataset_reader.h"
 
 #include <fstream>
