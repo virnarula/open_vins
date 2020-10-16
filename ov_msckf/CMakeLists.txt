@@ -101,8 +101,29 @@ target_include_directories(ov_msckf_lib PUBLIC src)
 add_executable(run_simulation src/run_simulation.cpp)
 target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
 
-add_library(slam2 SHARED src/slam2.cpp)
-target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
+if (catkin_FOUND)
+
+    add_executable(run_serial_msckf src/ros_serial_msckf.cpp)
+    target_link_libraries(run_serial_msckf ov_msckf_lib ${thirdparty_libraries})
+
+    add_executable(run_illixr_msckf src/run_illixr_msckf.cpp)
+    target_link_libraries(run_illixr_msckf ov_msckf_lib ${thirdparty_libraries})
+
+    add_executable(run_subscribe_msckf src/ros_subscribe_msckf.cpp)
+    target_link_libraries(run_subscribe_msckf ov_msckf_lib ${thirdparty_libraries})
+
+    add_executable(run_simulation src/run_simulation.cpp)
+    target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
+
+else()
+
+    add_executable(run_simulation src/run_simulation.cpp)
+    target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
+
+    add_executable(run_illixr_msckf src/run_illixr_msckf.cpp)
+    target_link_libraries(run_illixr_msckf ov_msckf_lib ${thirdparty_libraries})
+
+endif()
 
 #add_executable(test_sim_meas src/test_sim_meas.cpp)
 #target_link_libraries(test_sim_meas ov_msckf_lib ${thirdparty_libraries})
