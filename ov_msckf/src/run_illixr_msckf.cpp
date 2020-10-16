@@ -33,7 +33,6 @@
 
 using namespace ov_msckf;
 
-
 VioManager* sys;
 
 struct vel_acc_vector {
@@ -44,6 +43,92 @@ struct imu_data {
 	vel_acc_vector angular_velocity;
 	vel_acc_vector linear_acceleration;
 };
+
+VioManagerOptions create_params()
+{
+  VioManagerOptions params;
+
+  // Camera #0
+  Eigen::Matrix<double, 8, 1> intrinsics_0;
+  intrinsics_0 << 458.654, 457.296, 367.215, 248.375, -0.28340811, 0.07395907, 0.00019359, 1.76187114e-05;
+  std::vector<double> matrix_TCtoI_0 = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
+            0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768,
+            -0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949,
+            0.0, 0.0, 0.0, 1.0};
+
+  Eigen::Matrix4d T_CtoI_0;
+  T_CtoI_0 << matrix_TCtoI_0.at(0), matrix_TCtoI_0.at(1), matrix_TCtoI_0.at(2), matrix_TCtoI_0.at(3),
+    matrix_TCtoI_0.at(4), matrix_TCtoI_0.at(5), matrix_TCtoI_0.at(6), matrix_TCtoI_0.at(7),
+    matrix_TCtoI_0.at(8), matrix_TCtoI_0.at(9), matrix_TCtoI_0.at(10), matrix_TCtoI_0.at(11),
+    matrix_TCtoI_0.at(12), matrix_TCtoI_0.at(13), matrix_TCtoI_0.at(14), matrix_TCtoI_0.at(15);
+
+  // Load these into our state
+  Eigen::Matrix<double, 7, 1> extrinsics_0;
+  extrinsics_0.block(0, 0, 4, 1) = rot_2_quat(T_CtoI_0.block(0, 0, 3, 3).transpose());
+  extrinsics_0.block(4, 0, 3, 1) = -T_CtoI_0.block(0, 0, 3, 3).transpose() * T_CtoI_0.block(0, 3, 3, 1);
+
+  params.camera_fisheye.insert({0, false});
+  params.camera_intrinsics.insert({0, intrinsics_0});
+  params.camera_extrinsics.insert({0, extrinsics_0});
+
+  params.camera_wh.insert({0, {752, 480}});
+
+  // Camera #1
+  Eigen::Matrix<double, 8, 1> intrinsics_1;
+  intrinsics_1 << 457.587, 456.134, 379.999, 255.238, -0.28368365, 0.07451284, -0.00010473, -3.55590700e-05;
+  std::vector<double> matrix_TCtoI_1 = {0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
+            0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024,
+            -0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038,
+            0.0, 0.0, 0.0, 1.0};
+
+  Eigen::Matrix4d T_CtoI_1;
+  T_CtoI_1 << matrix_TCtoI_1.at(0), matrix_TCtoI_1.at(1), matrix_TCtoI_1.at(2), matrix_TCtoI_1.at(3),
+    matrix_TCtoI_1.at(4), matrix_TCtoI_1.at(5), matrix_TCtoI_1.at(6), matrix_TCtoI_1.at(7),
+    matrix_TCtoI_1.at(8), matrix_TCtoI_1.at(9), matrix_TCtoI_1.at(10), matrix_TCtoI_1.at(11),
+    matrix_TCtoI_1.at(12), matrix_TCtoI_1.at(13), matrix_TCtoI_1.at(14), matrix_TCtoI_1.at(15);
+
+  // Load these into our state
+  Eigen::Matrix<double, 7, 1> extrinsics_1;
+  extrinsics_1.block(0, 0, 4, 1) = rot_2_quat(T_CtoI_1.block(0, 0, 3, 3).transpose());
+  extrinsics_1.block(4, 0, 3, 1) = -T_CtoI_1.block(0, 0, 3, 3).transpose() * T_CtoI_1.block(0, 3, 3, 1);
+
+  params.camera_fisheye.insert({1, false});
+  params.camera_intrinsics.insert({1, intrinsics_1});
+  params.camera_extrinsics.insert({1, extrinsics_1});
+
+  params.camera_wh.insert({1, {752, 480}});
+
+  // params.state_options.max_slam_features = 0;
+  params.state_options.num_cameras = 2;
+  params.init_window_time = 0.75;
+  params.init_imu_thresh = 1.5;
+  params.fast_threshold = 15;
+  params.grid_x = 5;
+  params.grid_y = 3;
+  params.num_pts = 150;
+  params.msckf_options.chi2_multipler = 1;
+  params.knn_ratio = .7;
+
+  params.state_options.imu_avg = true;
+  params.state_options.do_fej = true;
+  params.state_options.use_rk4_integration = true;
+  params.use_stereo = true;
+  params.state_options.do_calib_camera_pose = true;
+  params.state_options.do_calib_camera_intrinsics = true;
+  params.state_options.do_calib_camera_timeoffset = true;
+
+  params.dt_slam_delay = 3.0;
+  params.state_options.max_slam_features = 50;
+  params.state_options.max_slam_in_update = 25;
+  params.state_options.max_msckf_in_update = 999;
+
+  params.use_aruco = false;
+
+  params.state_options.feat_rep_slam = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
+  params.state_options.feat_rep_aruco = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
+
+  return params;
+}
 
 void load_images(const string &file_name, unordered_map<double, string> &rgb_images,
 				 vector<double> &timestamps) {
@@ -136,7 +221,8 @@ int main(int argc, char** argv) {
 
 	cout << "Finished Loading Data!!!!" << endl;
     // Create our VIO system
-    sys = new VioManager();
+    auto params = create_params();
+    sys = new VioManager(params);
 
     // Set OpenCV threading
     cv::setNumThreads(0);
@@ -282,7 +368,7 @@ int main(int argc, char** argv) {
     }
 
     // Dump frame times
-    {
+    /*{
         ofstream output_file;
         output_file.open("times.csv", std::ios::out);
 
@@ -297,7 +383,7 @@ int main(int argc, char** argv) {
         }
 
         output_file.close();
-    }
+    }*/
 
     // Finally delete our system
     delete sys;
