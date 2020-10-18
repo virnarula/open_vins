@@ -182,7 +182,7 @@ public:
 		: plugin{name_, pb_}
 		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
-		, _m_imu_integrator_input{sb->publish<imu_integrator_input>("imu_integrator_input")}
+		, _m_imu_integrator_input{sb->publish<imu_integrator_input2>("imu_integrator_input")}
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
 		_m_begin = std::chrono::system_clock::now();
@@ -257,9 +257,11 @@ public:
 		// Get the pose returned from SLAM
 		state = open_vins_estimator.get_state();
 		Eigen::Vector4d quat = state->_imu->quat();
+		Eigen::Vector3d vel = state->_imu->vel();
 		Eigen::Vector3d pose = state->_imu->pos();
 
 		Eigen::Vector3f swapped_pos = Eigen::Vector3f{float(pose(0)), float(pose(1)), float(pose(2))};
+		Eigen::Vector3f swapped_vel = Eigen::Vector3f{float(vel(0)), float(vel(1)), float(vel(2))};
 		Eigen::Quaternionf swapped_rot = Eigen::Quaternionf{float(quat(3)), float(quat(0)), float(quat(1)), float(quat(2))};
 
        	assert(isfinite(swapped_rot.w()));
@@ -281,13 +283,28 @@ public:
 				.orientation = swapped_rot,
 			});
 
-			_m_imu_integrator_input->put(new imu_integrator_input{
+			//m init biases
+			// gtsam::Vector3(0.1, -0.1, 0.3),
+            // gtsam::Vector3(0.1, 0.3, -0.2)
+
+			_m_imu_integrator_input->put(new imu_integrator_input2{
 				.slam_ready = true,
-				.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
 				.last_cam_integration_time = timestamp_in_seconds,
-				.imu_value = state->_imu->value(),
-				.imu_fej = state->_imu->fej(),
-				.gravity = open_vins_estimator.get_propagator()->get_gravity(),
+				.params = {
+					.gyro_noise = 0.00016968,
+					.acc_noise = 0.002,
+					.gyro_walk = 1.9393e-05,
+					.acc_walk = 0.003,
+					.n_gravity = Eigen::Matrix<double,3,1>(0.0, 0.0, -9.81),
+					.imu_integration_sigma = 1.0,
+					.nominal_rate = 200.0,
+				},
+
+				.biasAcc = state->_imu->bias_a(),
+				.biasGyro = state->_imu->bias_g(),
+				.position = swapped_pos,
+				.velocity = swapped_vel,
+				.quat = swapped_rot,
 			});
 		}
 
@@ -306,7 +323,7 @@ public:
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
-	std::unique_ptr<writer<imu_integrator_input>> _m_imu_integrator_input;
+	std::unique_ptr<writer<imu_integrator_input2>> _m_imu_integrator_input;
 
 	time_type _m_begin;
 	State *state;
