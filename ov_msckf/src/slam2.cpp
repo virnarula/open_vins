@@ -288,9 +288,7 @@ public:
             // gtsam::Vector3(0.1, 0.3, -0.2)
 
 			_m_imu_integrator_input->put(new imu_integrator_input2{
-				.slam_ready = true,
 				.last_cam_integration_time = timestamp_in_seconds,
-				.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
 				.params = {
 					.gyro_noise = 0.00016968,
 					.acc_noise = 0.002,
