@@ -261,8 +261,8 @@ public:
 		Eigen::Vector3d pose = state->_imu->pos();
 
 		Eigen::Vector3f swapped_pos = Eigen::Vector3f{float(pose(0)), float(pose(1)), float(pose(2))};
-		Eigen::Vector3f swapped_vel = Eigen::Vector3f{float(vel(0)), float(vel(1)), float(vel(2))};
 		Eigen::Quaternionf swapped_rot = Eigen::Quaternionf{float(quat(3)), float(quat(0)), float(quat(1)), float(quat(2))};
+		Eigen::Quaterniond swapped_rot2 = Eigen::Quaterniond{(quat(3)), (quat(0)), (quat(1)), (quat(2))};
 
        	assert(isfinite(swapped_rot.w()));
         assert(isfinite(swapped_rot.x()));
@@ -303,9 +303,9 @@ public:
 
 				.biasAcc = state->_imu->bias_a(),
 				.biasGyro = state->_imu->bias_g(),
-				.position = swapped_pos,
-				.velocity = swapped_vel,
-				.quat = swapped_rot,
+				.position = pose,
+				.velocity = vel,
+				.quat = swapped_rot2,
 			});
 		}
 
