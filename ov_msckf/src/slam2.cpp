@@ -182,7 +182,7 @@ public:
 		: plugin{name_, pb_}
 		, sb{pb->lookup_impl<switchboard>()}
 		, open_vins_estimator{manager_params}
-		, _m_imu_integrator_input{sb->publish<imu_integrator_input2>("imu_integrator_input")}
+		, _m_imu_integrator_input{sb->publish<imu_integrator_input>("imu_integrator_input")}
 	{
 		_m_pose = sb->publish<pose_type>("slow_pose");
 		_m_begin = std::chrono::system_clock::now();
@@ -287,7 +287,7 @@ public:
 			// gtsam::Vector3(0.1, -0.1, 0.3),
             // gtsam::Vector3(0.1, 0.3, -0.2)
 
-			_m_imu_integrator_input->put(new imu_integrator_input2{
+			_m_imu_integrator_input->put(new imu_integrator_input{
 				.last_cam_integration_time = timestamp_in_seconds,
 				.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
 				.params = {
@@ -323,7 +323,7 @@ public:
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
-	std::unique_ptr<writer<imu_integrator_input2>> _m_imu_integrator_input;
+	std::unique_ptr<writer<imu_integrator_input>> _m_imu_integrator_input;
 
 	time_type _m_begin;
 	State *state;
