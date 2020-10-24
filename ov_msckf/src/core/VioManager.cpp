@@ -39,17 +39,17 @@ VioManager::VioManager() {
 
     // Load our state options
     StateOptions state_options;
-	state_options.do_fej = false; // use_fej
-    state_options.imu_avg = false; //use_imuavg
-	state_options.use_rk4_integration = true; // use_rk4int
-	state_options.do_calib_camera_pose =  false; // calib_cam_extrinsics
-	state_options.do_calib_camera_intrinsics = false; // calib_cam_intrinsics
-	state_options.do_calib_camera_timeoffset = false; // calib_cam_timeoffset
-	state_options.max_clone_size = 11; // max_clones
-	state_options.max_slam_features = 0; // max_slam
-	state_options.max_aruco_features = 1024; // max_aruco
-	state_options.num_cameras = 2; // max_cameras
-	dt_statupdelay = 3; // dt_slam_delay
+    state_options.do_fej = true; // use_fej
+    state_options.imu_avg = true; //use_imuavg
+    state_options.use_rk4_integration = true; // use_rk4int
+    state_options.do_calib_camera_pose =  true; // calib_cam_extrinsics
+    state_options.do_calib_camera_intrinsics = true; // calib_cam_intrinsics
+    state_options.do_calib_camera_timeoffset = true; // calib_cam_timeoffset
+    state_options.max_clone_size = 11; // max_clones
+    state_options.max_slam_features = 50; // max_slam
+    state_options.max_aruco_features = 1024; // max_aruco
+    state_options.num_cameras = 2; // max_cameras
+    dt_statupdelay = 3; // dt_slam_delay
 
     // Enforce that if we are doing stereo tracking, we have two cameras
     if(state_options.num_cameras < 1) {
@@ -60,7 +60,7 @@ VioManager::VioManager() {
 
     // Read in what representation our feature is
     std::string feat_rep_str;
-	feat_rep_str = "GLOBAL_3D"; // feat_representation
+    feat_rep_str = "ANCHORED_FULL_INVERSE_DEPTH"; // feat_representation
     std::transform(feat_rep_str.begin(), feat_rep_str.end(),feat_rep_str.begin(), ::toupper);
 
     // Set what representation we should be using
@@ -252,12 +252,12 @@ VioManager::VioManager() {
 	use_klt = true; // use_klt
 	//use_klt = false; // dont use_klt
 	use_aruco = false; // use_aruco
-	num_pts = 400; // num_pts
-	fast_threshold = 10; // fast_threshold
+	num_pts = 150; // num_pts
+	fast_threshold = 15; // fast_threshold
 	grid_x = 5; // grid_x
 	grid_y = 3; // grid_y
 	min_px_dist = 10; // min_px_dist
-	knn_ratio = 0.85; // knn_ratio
+	knn_ratio = 0.7; // knn_ratio
 	do_downsizing = true; // downsize_aruco
 
     // Debug, print to the console!
@@ -293,7 +293,7 @@ VioManager::VioManager() {
 
     // Load inertial state initialize parameters
     double init_window_time, init_imu_thresh;
-	init_window_time = 0.5; // init_window_time
+	init_window_time = 0.75; // init_window_time
 	init_imu_thresh = 1.5; // init_imu_thresh
 
     // Debug print out
