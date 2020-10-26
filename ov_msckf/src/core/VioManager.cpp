@@ -81,13 +81,10 @@ VioManager::VioManager(VioManagerOptions& params_) {
             boost::filesystem::remove(params.record_timing_filepath);
             printf(YELLOW "[STATS]: found old file found, deleted...\n" RESET);
         }
-        // Create the directory that we will open the file in
-        boost::filesystem::path p(params.record_timing_filepath);
-        boost::filesystem::create_directories(p.parent_path());
         // Open our statistics file!
         of_statistics.open(params.record_timing_filepath, std::ofstream::out | std::ofstream::app);
         // Write the header information into it
-        of_statistics << "# timestamp (sec),tracking,propagation,msckf update,";
+        of_statistics << "#timestamp (ms),tracking,propagation,msckf update,";
         if(state->_options.max_slam_features > 0) {
             of_statistics << "slam update,slam delayed,";
         }
