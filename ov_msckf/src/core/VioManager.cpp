@@ -124,6 +124,12 @@ VioManager::VioManager(VioManagerOptions& params_) {
     // Make the updater!
     updaterMSCKF = new UpdaterMSCKF(params.msckf_options,params.featinit_options);
     updaterSLAM = new UpdaterSLAM(params.slam_options,params.aruco_options,params.featinit_options);
+
+    // Init timing info
+    total_images = 0;
+    total_tracking_time = 0.0;
+    total_filter_time = 0.0;
+    total_frame_time = 0.0;
 }
 
 
@@ -549,6 +555,16 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     printf(BLUE "[TIME]: %.4f seconds for marginalization (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
     printf(BLUE "[TIME]: %.4f seconds for total\n" RESET, time_total);
 #endif
+
+    // Keep track of average
+    total_images++;
+    total_tracking_time += time_track;
+    total_filter_time += (time_total - time_track);
+    total_frame_time += time_total;
+
+    printf(GREEN "[AVG-TIME]: %.4f ms for tracking\n" RESET, total_tracking_time / (double) total_images);
+    printf(GREEN "[AVG-TIME]: %.4f ms for filter\n" RESET, total_filter_time / (double) total_images);
+    printf(GREEN "[AVG-TIME]: %.4f ms for total\n" RESET, total_frame_time / (double) total_images);
 
     // Finally if we are saving stats to file, lets save it to file
     if(params.record_timing_information && of_statistics.is_open()) {
