@@ -269,6 +269,10 @@ namespace ov_msckf {
         // Timing statistic file and variables
         std::ofstream of_statistics;
         boost::posix_time::ptime rT1, rT2, rT3, rT4, rT5, rT6, rT7;
+        unsigned total_images;
+        double total_tracking_time;
+        double total_filter_time;
+        double total_frame_time;
 
         // Track how much distance we have traveled
         double timelastupdate = -1;
