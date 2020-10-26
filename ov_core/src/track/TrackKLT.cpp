@@ -309,13 +309,33 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     rT6 =  boost::posix_time::microsec_clock::local_time();
 
     // Timing information
-    //printf("[TIME-KLT]: %.4f seconds for pyramid\n",(rT2-rT1).total_microseconds() * 1e-6);
-    //printf("[TIME-KLT]: %.4f seconds for detection\n",(rT3-rT2).total_microseconds() * 1e-6);
-    //printf("[TIME-KLT]: %.4f seconds for temporal klt\n",(rT4-rT3).total_microseconds() * 1e-6);
-    //printf("[TIME-KLT]: %.4f seconds for stereo klt\n",(rT5-rT4).total_microseconds() * 1e-6);
-    //printf("[TIME-KLT]: %.4f seconds for feature DB update (%d features)\n",(rT6-rT5).total_microseconds() * 1e-6, (int)good_left.size());
-    //printf("[TIME-KLT]: %.4f seconds for total\n",(rT6-rT1).total_microseconds() * 1e-6);
+    const auto pyramid_time = (rT2-rT1).total_microseconds() * 1e-3;
+    const auto detection_time = (rT3-rT2).total_microseconds() * 1e-3;
+    const auto temporal_klt_time = (rT4-rT3).total_microseconds() * 1e-3;
+    const auto stereo_klt_time = (rT5-rT4).total_microseconds() * 1e-3;
+    const auto matching_time = temporal_klt_time + stereo_klt_time;
+    const auto db_time = (rT6-rT5).total_microseconds() * 1e-3;
+    const auto total = (rT6-rT1).total_microseconds() * 1e-3;
 
+    total_images++;
+    total_pyramid_time += pyramid_time;
+    total_detection_time += detection_time;
+    total_matching_time += matching_time;
+    total_db_time += db_time;
+    total_time += total;
+
+    printf(CYAN "[TIME-KLT]: %.4f ms for pyramid\n" RESET, pyramid_time);
+    printf(CYAN "[TIME-KLT]: %.4f ms for detection\n" RESET, detection_time);
+    printf(CYAN "[TIME-KLT]: %.4f ms for temporal klt\n" RESET, temporal_klt_time);
+    printf(CYAN "[TIME-KLT]: %.4f ms for stereo klt\n" RESET, stereo_klt_time);
+    printf(CYAN "[TIME-KLT]: %.4f ms for feature DB update (%d features)\n" RESET, db_time, (int)good_left.size());
+    printf(CYAN "[TIME-KLT]: %.4f ms for total\n" RESET, total);
+
+    printf(WHITE "[AVG-TIME-KLT]: %.4f ms for pyramid\n" RESET, total_pyramid_time / (double) total_images);
+    printf(WHITE "[AVG-TIME-KLT]: %.4f ms for detection\n" RESET, total_detection_time / (double) total_images);
+    printf(WHITE "[AVG-TIME-KLT]: %.4f ms for matching\n" RESET, total_matching_time / (double) total_images);
+    printf(WHITE "[AVG-TIME-KLT]: %.4f ms for feature DB update\n" RESET, total_db_time / (double) total_images);
+    printf(WHITE "[AVG-TIME-KLT]: %.4f ms for total\n" RESET, total_time / (double) total_images);
 }
 
 void TrackKLT::perform_detection_monocular(const std::vector<cv::Mat> &img0pyr, std::vector<cv::KeyPoint> &pts0, std::vector<size_t> &ids0) {
