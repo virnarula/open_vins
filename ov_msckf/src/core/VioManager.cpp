@@ -535,25 +535,25 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     //===================================================================================
 
     // Get timing statitics information
-    double time_track = (rT2-rT1).total_microseconds() * 1e-6;
-    double time_prop = (rT3-rT2).total_microseconds() * 1e-6;
-    double time_msckf = (rT4-rT3).total_microseconds() * 1e-6;
-    double time_slam_update = (rT5-rT4).total_microseconds() * 1e-6;
-    double time_slam_delay = (rT6-rT5).total_microseconds() * 1e-6;
-    double time_marg = (rT7-rT6).total_microseconds() * 1e-6;
-    double time_total = (rT7-rT1).total_microseconds() * 1e-6;
+    double time_track = (rT2-rT1).total_microseconds() * 1e-3;
+    double time_prop = (rT3-rT2).total_microseconds() * 1e-3;
+    double time_msckf = (rT4-rT3).total_microseconds() * 1e-3;
+    double time_slam_update = (rT5-rT4).total_microseconds() * 1e-3;
+    double time_slam_delay = (rT6-rT5).total_microseconds() * 1e-3;
+    double time_marg = (rT7-rT6).total_microseconds() * 1e-3;
+    double time_total = (rT7-rT1).total_microseconds() * 1e-3;
 
 #ifndef NDEBUG
     // Timing information
-    printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
-    printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, time_prop);
-    printf(BLUE "[TIME]: %.4f seconds for MSCKF update (%d features)\n" RESET, time_msckf, (int)featsup_MSCKF.size());
+    printf(BLUE "[TIME]: %.4f ms for tracking\n" RESET, time_track);
+    printf(BLUE "[TIME]: %.4f ms for propagation\n" RESET, time_prop);
+    printf(BLUE "[TIME]: %.4f ms for MSCKF update (%d features)\n" RESET, time_msckf, (int)featsup_MSCKF.size());
     if(state->_options.max_slam_features > 0) {
-        printf(BLUE "[TIME]: %.4f seconds for SLAM update (%d feats)\n" RESET, time_slam_update, (int)feats_slam_UPDATE.size());
-        printf(BLUE "[TIME]: %.4f seconds for SLAM delayed init (%d feats)\n" RESET, time_slam_delay, (int)feats_slam_DELAYED.size());
+        printf(BLUE "[TIME]: %.4f ms for SLAM update (%d feats)\n" RESET, time_slam_update, (int)feats_slam_UPDATE.size());
+        printf(BLUE "[TIME]: %.4f ms for SLAM delayed init (%d feats)\n" RESET, time_slam_delay, (int)feats_slam_DELAYED.size());
     }
-    printf(BLUE "[TIME]: %.4f seconds for marginalization (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
-    printf(BLUE "[TIME]: %.4f seconds for total\n" RESET, time_total);
+    printf(BLUE "[TIME]: %.4f ms for marginalization (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
+    printf(BLUE "[TIME]: %.4f ms for total\n" RESET, time_total);
 #endif
 
     // Keep track of average
