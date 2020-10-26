@@ -127,6 +127,8 @@ VioManagerOptions create_params()
     params.state_options.feat_rep_slam = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
     params.state_options.feat_rep_aruco = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
 
+    params.record_timing_information = true;
+
     return params;
 }
 
