@@ -283,10 +283,6 @@ public:
 				.orientation = swapped_rot,
 			});
 
-			//m init biases
-			// gtsam::Vector3(0.1, -0.1, 0.3),
-            // gtsam::Vector3(0.1, 0.3, -0.2)
-
 			_m_imu_integrator_input->put(new imu_integrator_input{
 				.last_cam_integration_time = timestamp_in_seconds,
 				.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
