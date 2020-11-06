@@ -188,14 +188,6 @@ public:
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
-		_m_pose->put(
-			new pose_type{
-				.sensor_time = std::chrono::time_point<std::chrono::system_clock>{},
-				.position = Eigen::Vector3f{0, 0, 0},
-				.orientation = Eigen::Quaternionf{1, 0, 0, 0}
-			}
-		);
-
 #ifdef CV_HAS_METRICS
 		cv::metrics::setAccount(new std::string{"-1"});
 #endif
@@ -219,8 +211,6 @@ public:
 			return;
 		}
 
-		// This ensures that every data point is coming in chronological order If youre failing this assert, 
-		// make sure that your data folder matches the name in offline_imu_cam/plugin.cc
 		double timestamp_in_seconds = (double(datum->dataset_time) / NANO_SEC);
 		assert(timestamp_in_seconds > previous_timestamp);
 		previous_timestamp = timestamp_in_seconds;
@@ -251,8 +241,7 @@ public:
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
 		cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
 		cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
-		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
-		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
+		open_vins_estimator.feed_measurement_stereo(timestamp_in_seconds, img0, img1, 0, 1);
 
 		// Get the pose returned from SLAM
 		state = open_vins_estimator.get_state();
@@ -277,10 +266,12 @@ public:
 				isUninitialized = false;
 			}
 
+			assert(imu_cam_buffer->dataset_time > 0);
 			_m_pose->put(new pose_type{
 				.sensor_time = imu_cam_buffer->time,
 				.position = swapped_pos,
 				.orientation = swapped_rot,
+				.dataset_time = imu_cam_buffer->dataset_time,
 			});
 
 			_m_imu_integrator_input->put(new imu_integrator_input{
@@ -304,13 +295,6 @@ public:
 			});
 		}
 
-		// I know, a priori, nobody other plugins subscribe to this topic
-		// Therefore, I can const the cast away, and delete stuff
-		// This fixes a memory leak.
-		// -- Sam at time t1
-		// Turns out, this is no longer correct. debbugview uses it
-		// const_cast<imu_cam_type*>(imu_cam_buffer)->img0.reset();
-		// const_cast<imu_cam_type*>(imu_cam_buffer)->img1.reset();
 		imu_cam_buffer = datum;
 	}
 
