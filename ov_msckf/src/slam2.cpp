@@ -156,7 +156,7 @@ VioManagerOptions create_params()
   params.init_imu_thresh = 0.5;
 #endif
 #ifdef REALSENSE
-  params.init_imu_thresh = 0.75;
+  params.init_imu_thresh = 0.5;
 #else
   // EuRoC
 	params.init_imu_thresh = 1.5;
@@ -182,10 +182,15 @@ VioManagerOptions create_params()
 	params.state_options.do_calib_camera_timeoffset = true;
 
 	params.dt_slam_delay = 3.0;
+#ifdef REALSENSE
+    params.state_options.max_slam_features = 75;
+	params.state_options.max_slam_in_update = 75;
+#else
 	params.state_options.max_slam_features = 50;
 	params.state_options.max_slam_in_update = 25;
+#endif
 #ifdef REALSENSE
-    params.state_options.max_msckf_in_update = 25; // try changing this to 999
+    params.state_options.max_msckf_in_update = 999; // try changing this to 999
 #else
 	params.state_options.max_msckf_in_update = 999;
 #endif
