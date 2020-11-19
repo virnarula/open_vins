@@ -21,6 +21,7 @@ using namespace ov_msckf;
 // Comment in if using ZED instead of offline_imu_cam
 // TODO: Pull from config YAML file
 #define ZED
+// #define REALSENSE
 
 VioManagerOptions create_params()
 {
@@ -32,9 +33,12 @@ VioManagerOptions create_params()
   // ZED calibration tool; fx, fy, cx, cy, k1, k2, p1, p2
   // https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
   intrinsics_0 << 349.686, 349.686, 332.778, 192.423, -0.175708, 0.0284421, 0, 0;
+#endif
+#ifdef REALSENSE
+  intrinsics_0 << 287.5222548531953, 287.7759196963578, 419.94592910576455, 394.2977562606552, -0.008152232448426595, 0.06139283207665097, -0.06682430814303411, 0.01756431204855009;
 #else
   // EuRoC
-	intrinsics_0 << 458.654, 457.296, 367.215, 248.375, -0.28340811, 0.07395907, 0.00019359, 1.76187114e-05;
+  intrinsics_0 << 458.654, 457.296, 367.215, 248.375, -0.28340811, 0.07395907, 0.00019359, 1.76187114e-05;
 #endif
 
 #ifdef ZED
@@ -42,6 +46,12 @@ VioManagerOptions create_params()
   std::vector<double> matrix_TCtoI_0 = {-0.01080233, 0.00183858, 0.99993996, 0.01220425,
             -0.99993288, -0.00420947, -0.01079452, 0.0146056,
             0.00418937, -0.99998945, 0.00188393, -0.00113692,
+            0.0, 0.0, 0.0, 1.0};
+#endif
+#ifdef REALSENSE
+   std::vector<double> matrix_TCtoI_0 = {-0.99920167,  0.02660989,  0.02979823,  0.00013258,
+            -0.02618486, -0.99955102,  0.01456427, -0.00102954,
+             0.03017241,  0.01377238,  0.99944982, -0.00098432,
             0.0, 0.0, 0.0, 1.0};
 #else
 	std::vector<double> matrix_TCtoI_0 = {0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975,
@@ -61,12 +71,19 @@ VioManagerOptions create_params()
 	extrinsics_0.block(0, 0, 4, 1) = rot_2_quat(T_CtoI_0.block(0, 0, 3, 3).transpose());
 	extrinsics_0.block(4, 0, 3, 1) = -T_CtoI_0.block(0, 0, 3, 3).transpose() * T_CtoI_0.block(0, 3, 3, 1);
 
+#ifdef REALSENSE
+    params.camera_fisheye.insert({0, true});
+#else
 	params.camera_fisheye.insert({0, false});
+#endif
 	params.camera_intrinsics.insert({0, intrinsics_0});
 	params.camera_extrinsics.insert({0, extrinsics_0});
 
 #ifdef ZED
   params.camera_wh.insert({0, {672, 376}});
+#endif
+#ifdef REALSENSE
+  params.camera_wh.insert({0, {848, 800}});
 #else
 	params.camera_wh.insert({0, {752, 480}});
 #endif
@@ -76,6 +93,9 @@ VioManagerOptions create_params()
 #ifdef ZED
   // ZED calibration tool; fx, fy, cx, cy, k1, k2, p1, p2
   intrinsics_1 << 350.01, 350.01, 343.729, 185.405, -0.174559, 0.0277521, 0, 0;
+#endif
+#ifdef REALSENSE
+  intrinsics_1 << 287.2648972756499, 287.5526675605301, 417.53890746140695, 399.1202543659908, -0.006601389878082893, 0.06285624670204437, -0.06624718433022161, 0.016178100033794867;
 #else
   // EuRoC
 	intrinsics_1 << 457.587, 456.134, 379.999, 255.238, -0.28368365, 0.07451284, -0.00010473, -3.55590700e-05;
@@ -86,6 +106,12 @@ VioManagerOptions create_params()
   std::vector<double> matrix_TCtoI_1 = {-0.01043535, -0.00191061, 0.99994372, 0.01190459,
             -0.99993668, -0.00419281, -0.01044329, -0.04732387,
             0.00421252, -0.99998938, -0.00186674, -0.00098799,
+            0.0, 0.0, 0.0, 1.0};
+#endif
+#ifdef REALSENSE
+  std::vector<double> matrix_TCtoI_1 = {-0.99940739,  0.02358804,  0.02506927, -0.06382506,
+            -0.02311628, -0.99955327,  0.01894448, -0.00286131,
+             0.02550493,  0.01835374,  0.99950620,  0.00096580,
             0.0, 0.0, 0.0, 1.0};
 #else
 	std::vector<double> matrix_TCtoI_1 = {0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556,
@@ -105,12 +131,19 @@ VioManagerOptions create_params()
 	extrinsics_1.block(0, 0, 4, 1) = rot_2_quat(T_CtoI_1.block(0, 0, 3, 3).transpose());
 	extrinsics_1.block(4, 0, 3, 1) = -T_CtoI_1.block(0, 0, 3, 3).transpose() * T_CtoI_1.block(0, 3, 3, 1);
 
+#ifdef REALSENSE
+    params.camera_fisheye.insert({1, true});
+#else
 	params.camera_fisheye.insert({1, false});
+#endif
 	params.camera_intrinsics.insert({1, intrinsics_1});
 	params.camera_extrinsics.insert({1, extrinsics_1});
 
 #ifdef ZED
   params.camera_wh.insert({1, {672, 376}});
+#endif
+#ifdef REALSENSE
+  params.camera_wh.insert({1, {848, 800}});
 #else
 	params.camera_wh.insert({1, {752, 480}});
 #endif
@@ -121,6 +154,9 @@ VioManagerOptions create_params()
 #ifdef ZED
   // Hand tuned
   params.init_imu_thresh = 0.5;
+#endif
+#ifdef REALSENSE
+  params.init_imu_thresh = 0.75;
 #else
   // EuRoC
 	params.init_imu_thresh = 1.5;
@@ -148,20 +184,35 @@ VioManagerOptions create_params()
 	params.dt_slam_delay = 3.0;
 	params.state_options.max_slam_features = 50;
 	params.state_options.max_slam_in_update = 25;
+#ifdef REALSENSE
+    params.state_options.max_msckf_in_update = 25; // try changing this to 999
+#else
 	params.state_options.max_msckf_in_update = 999;
+#endif
 
 #ifdef ZED
   // Pixel noise; ZED works with defaults values but these may better account for rolling shutter
   params.msckf_options.chi2_multipler = 2;
   params.msckf_options.sigma_pix = 5;
-	params.slam_options.chi2_multipler = 2;
-	params.slam_options.sigma_pix = 5;
+  params.slam_options.chi2_multipler = 2;
+  params.slam_options.sigma_pix = 5;
 
   // IMU biases from https://github.com/rpng/open_vins/issues/52#issuecomment-619480497
   params.imu_noises.sigma_a = 0.00395942;  // Accelerometer noise
   params.imu_noises.sigma_ab = 0.00072014; // Accelerometer random walk
   params.imu_noises.sigma_w = 0.00024213;  // Gyroscope noise
   params.imu_noises.sigma_wb = 1.9393e-05; // Gyroscope random walk
+#endif
+#ifdef REALSENSE
+  params.msckf_options.chi2_multipler = 1;
+  params.msckf_options.sigma_pix = 1;
+  params.slam_options.chi2_multipler = 1;
+  params.slam_options.sigma_pix = 1;
+
+  params.imu_noises.sigma_a = 1.0000e-1;  // Accelerometer noise
+  params.imu_noises.sigma_ab = 3.0000e-3; // Accelerometer random walk
+  params.imu_noises.sigma_w = 1.6968e-02;  // Gyroscope noise
+  params.imu_noises.sigma_wb = 1.9393e-03; // Gyroscope random walk
 #else
 	params.slam_options.chi2_multipler = 1;
 	params.slam_options.sigma_pix = 1;
@@ -170,7 +221,7 @@ VioManagerOptions create_params()
 	params.use_aruco = false;
 
 	params.state_options.feat_rep_slam = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
-  params.state_options.feat_rep_aruco = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
+    params.state_options.feat_rep_aruco = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
 
 	return params;
 }
