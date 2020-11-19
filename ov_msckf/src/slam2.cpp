@@ -20,8 +20,8 @@ using namespace ov_msckf;
 
 // Comment in if using ZED instead of offline_imu_cam
 // TODO: Pull from config YAML file
-#define ZED
-// #define REALSENSE
+// #define ZED
+#define REALSENSE
 
 VioManagerOptions create_params()
 {
