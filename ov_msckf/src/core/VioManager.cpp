@@ -78,8 +78,8 @@ VioManager::VioManager(VioManagerOptions& params_) {
             printf(YELLOW "[STATS]: found old file found, deleted...\n" RESET);
         }
         // Create the directory that we will open the file in
-        boost::filesystem::path p(params.record_timing_filepath);
-        boost::filesystem::create_directories(p.parent_path());
+        //boost::filesystem::path p(params.record_timing_filepath);
+        //boost::filesystem::create_directories(p.parent_path());
         // Open our statistics file!
         of_statistics.open(params.record_timing_filepath, std::ofstream::out | std::ofstream::app);
         // Write the header information into it
@@ -120,6 +120,12 @@ VioManager::VioManager(VioManagerOptions& params_) {
     // Make the updater!
     updaterMSCKF = new UpdaterMSCKF(params.msckf_options,params.featinit_options);
     updaterSLAM = new UpdaterSLAM(params.slam_options,params.aruco_options,params.featinit_options);
+
+    // Init timing info
+    total_images = 0;
+    total_tracking_time = 0.0;
+    total_filter_time = 0.0;
+    total_frame_time = 0.0;
 }
 
 
@@ -523,26 +529,36 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     //===================================================================================
 
     // Get timing statitics information
-    double time_track = (rT2-rT1).total_microseconds() * 1e-6;
-    double time_prop = (rT3-rT2).total_microseconds() * 1e-6;
-    double time_msckf = (rT4-rT3).total_microseconds() * 1e-6;
-    double time_slam_update = (rT5-rT4).total_microseconds() * 1e-6;
-    double time_slam_delay = (rT6-rT5).total_microseconds() * 1e-6;
-    double time_marg = (rT7-rT6).total_microseconds() * 1e-6;
-    double time_total = (rT7-rT1).total_microseconds() * 1e-6;
+    double time_track = (rT2-rT1).total_microseconds() * 1e-3;
+    double time_prop = (rT3-rT2).total_microseconds() * 1e-3;
+    double time_msckf = (rT4-rT3).total_microseconds() * 1e-3;
+    double time_slam_update = (rT5-rT4).total_microseconds() * 1e-3;
+    double time_slam_delay = (rT6-rT5).total_microseconds() * 1e-3;
+    double time_marg = (rT7-rT6).total_microseconds() * 1e-3;
+    double time_total = (rT7-rT1).total_microseconds() * 1e-3;
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
     // Timing information
-    printf(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
-    printf(BLUE "[TIME]: %.4f seconds for propagation\n" RESET, time_prop);
-    printf(BLUE "[TIME]: %.4f seconds for MSCKF update (%d features)\n" RESET, time_msckf, (int)featsup_MSCKF.size());
+    printf(CYAN "[TIME]: %.4f ms for tracking\n" RESET, time_track);
+    printf(CYAN "[TIME]: %.4f ms for propagation\n" RESET, time_prop);
+    printf(CYAN "[TIME]: %.4f ms for MSCKF update (%d features)\n" RESET, time_msckf, (int)featsup_MSCKF.size());
     if(state->_options.max_slam_features > 0) {
-        printf(BLUE "[TIME]: %.4f seconds for SLAM update (%d feats)\n" RESET, time_slam_update, (int)feats_slam_UPDATE.size());
-        printf(BLUE "[TIME]: %.4f seconds for SLAM delayed init (%d feats)\n" RESET, time_slam_delay, (int)feats_slam_DELAYED.size());
+        printf(CYAN "[TIME]: %.4f ms for SLAM update (%d feats)\n" RESET, time_slam_update, (int)feats_slam_UPDATE.size());
+        printf(CYAN "[TIME]: %.4f ms for SLAM delayed init (%d feats)\n" RESET, time_slam_delay, (int)feats_slam_DELAYED.size());
     }
-    printf(BLUE "[TIME]: %.4f seconds for marginalization (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
-    printf(BLUE "[TIME]: %.4f seconds for total\n" RESET, time_total);
-#endif
+    printf(CYAN "[TIME]: %.4f ms for marginalization (%d clones in state)\n" RESET, time_marg, (int)state->_clones_IMU.size());
+    printf(CYAN "[TIME]: %.4f ms for total\n" RESET, time_total);
+
+    // Keep track of average
+    total_images++;
+    total_tracking_time += time_track;
+    total_filter_time += (time_total - time_track);
+    total_frame_time += time_total;
+
+    printf(GREEN "[AVG-TIME]: %.4f ms for tracking\n" RESET, total_tracking_time / (double) total_images);
+    printf(GREEN "[AVG-TIME]: %.4f ms for filter\n" RESET, total_filter_time / (double) total_images);
+    printf(GREEN "[AVG-TIME]: %.4f ms for total\n" RESET, total_frame_time / (double) total_images);
+//#endif
 
     // Finally if we are saving stats to file, lets save it to file
     if(params.record_timing_information && of_statistics.is_open()) {
@@ -612,26 +628,3 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     }
 #endif
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
