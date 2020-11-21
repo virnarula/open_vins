@@ -333,7 +333,9 @@ void VioManager::do_feature_propagate_update(double timestamp) {
 
     // Now, lets get all features that should be used for an update that are lost in the newest frame
     std::vector<Feature*> feats_lost, feats_marg, feats_slam;
+    unsigned num_lost, num_marg, num_slam;
     feats_lost = trackFEATS->get_feature_database()->features_not_containing_newer(state->_timestamp);
+    num_lost = feats_lost.size();
 
     // Don't need to get the oldest features untill we reach our max number of clones
     if((int)state->_clones_IMU.size() > state->_options.max_clone_size) {
@@ -375,6 +377,8 @@ void VioManager::do_feature_propagate_update(double timestamp) {
             it2++;
         }
     }
+
+    num_marg = feats_marg.size();
 
     // Count how many aruco tags we have in our state
     int curr_aruco_tags = 0;
@@ -427,6 +431,9 @@ void VioManager::do_feature_propagate_update(double timestamp) {
             //printf("[UPDATE-SLAM]: new feature ready %d (%d measurements)\n",(int)feats_slam.at(i)->featid,(int)feats_slam.at(i)->timestamps_left.size());
         }
     }
+
+    num_slam = feats_slam.size();
+    //printf("Features,%d,%d,%d\n", num_lost, num_marg, num_slam);
 
     // Concatenate our MSCKF feature arrays (i.e., ones not being used for slam updates)
     std::vector<Feature*> featsup_MSCKF = feats_lost;
