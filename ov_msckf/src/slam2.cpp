@@ -309,6 +309,8 @@ public:
 				.position = pose,
 				.velocity = vel,
 				.quat = swapped_rot2,
+				.cam_time = imu_cam_buffer->time,
+				.imu_time = datum->time,
 			});
 		}
 
