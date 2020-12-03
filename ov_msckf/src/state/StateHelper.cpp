@@ -39,8 +39,8 @@ void StateHelper::EKFPropagation(State *state, const std::vector<Type*> &order_N
     int size_order_NEW = order_NEW.at(0)->size();
     for(size_t i=0; i<order_NEW.size()-1; i++) {
         if(order_NEW.at(i)->id()+order_NEW.at(i)->size()!=order_NEW.at(i+1)->id()) {
-			printf(RED "StateHelper::EKFPropagation() - Called with non-contiguous state elements!\n" RESET);
-			printf(RED "StateHelper::EKFPropagation() - This code only support a state transition which is in the same order as the state\n" RESET);
+            printf(RED "StateHelper::EKFPropagation() - Called with non-contiguous state elements!\n" RESET);
+            printf(RED "StateHelper::EKFPropagation() - This code only support a state transition which is in the same order as the state\n" RESET);
             std::exit(EXIT_FAILURE);
         }
         size_order_NEW += order_NEW.at(i+1)->size();
@@ -240,8 +240,8 @@ void StateHelper::marginalize(State *state, Type *marg) {
 
     // Check if the current state has the element we want to marginalize
     if (std::find(state->_variables.begin(), state->_variables.end(), marg) == state->_variables.end()) {
-		printf(RED "StateHelper::marginalize() - Called on variable that is not in the state\n" RESET);
-		printf(RED "StateHelper::marginalize() - Marginalization, does NOT work on sub-variables yet...\n" RESET);
+        printf(RED "StateHelper::marginalize() - Called on variable that is not in the state\n" RESET);
+        printf(RED "StateHelper::marginalize() - Marginalization, does NOT work on sub-variables yet...\n" RESET);
         std::exit(EXIT_FAILURE);
     }
 
@@ -347,8 +347,8 @@ Type* StateHelper::clone(State *state, Type *variable_to_clone) {
 
     // Check if the current state has this variable
     if (new_clone == nullptr) {
-		printf(RED "StateHelper::clone() - Called on variable is not in the state\n" RESET);
-		printf(RED "StateHelper::clone() - Ensure that the variable specified is a variable, or sub-variable..\n" RESET);
+        printf(RED "StateHelper::clone() - Called on variable is not in the state\n" RESET);
+        printf(RED "StateHelper::clone() - Ensure that the variable specified is a variable, or sub-variable..\n" RESET);
         std::exit(EXIT_FAILURE);
     }
 
@@ -376,12 +376,12 @@ bool StateHelper::initialize(State *state, Type *new_variable, const std::vector
     for(int r=0; r<R.rows(); r++) {
         for(int c=0; c<R.cols(); c++) {
             if(r==c && R(0,0) != R(r,c)) {
-				printf(RED "StateHelper::initialize() - Your noise is not isotropic!\n" RESET);
-				printf(RED "StateHelper::initialize() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
+                printf(RED "StateHelper::initialize() - Your noise is not isotropic!\n" RESET);
+                printf(RED "StateHelper::initialize() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
                 std::exit(EXIT_FAILURE);
             } else if(r!=c && R(r,c) != 0.0) {
-				printf(RED "StateHelper::initialize() - Your noise is not diagonal!\n" RESET);
-				printf(RED "StateHelper::initialize() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
+                printf(RED "StateHelper::initialize() - Your noise is not diagonal!\n" RESET);
+                printf(RED "StateHelper::initialize() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
                 std::exit(EXIT_FAILURE);
             }
         }
@@ -468,12 +468,12 @@ void StateHelper::initialize_invertible(State *state, Type *new_variable, const 
     for(int r=0; r<R.rows(); r++) {
         for(int c=0; c<R.cols(); c++) {
             if(r==c && R(0,0) != R(r,c)) {
-				printf(RED "StateHelper::initialize_invertible() - Your noise is not isotropic!\n" RESET);
-				printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
+                printf(RED "StateHelper::initialize_invertible() - Your noise is not isotropic!\n" RESET);
+                printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
                 std::exit(EXIT_FAILURE);
             } else if(r!=c && R(r,c) != 0.0) {
-				printf(RED "StateHelper::initialize_invertible() - Your noise is not diagonal!\n" RESET);
-				printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
+                printf(RED "StateHelper::initialize_invertible() - Your noise is not diagonal!\n" RESET);
+                printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
                 std::exit(EXIT_FAILURE);
             }
         }

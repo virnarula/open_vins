@@ -182,7 +182,7 @@ public:
 		: plugin{name_, pb_}
 		, sb{pb->lookup_impl<switchboard>()}
 		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
-		, _m_imu_raw{sb->get_writer<imu_raw_type>("imu_raw")}
+		, _m_imu_integrator_input{sb->get_writer<imu_integrator_input>("imu_integrator_input")}
 		, open_vins_estimator{manager_params}
 	{
 		_m_pose.put(new (_m_pose.allocate()) pose_type{
@@ -222,22 +222,6 @@ public:
 		// Feed the IMU measurement. There should always be IMU data in each call to feed_imu_cam
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
-		if (open_vins_estimator.initialized()) {
-			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
-			imu_raw_type *imu_raw_data = new (_m_imu_raw.allocate()) imu_raw_type {
-				Eigen::Matrix<double, 3, 1>::Zero(), 
-				Eigen::Matrix<double, 3, 1>::Zero(), 
-				Eigen::Matrix<double, 3, 1>::Zero(), 
-				Eigen::Matrix<double, 3, 1>::Zero(),
-				Eigen::Matrix<double, 13, 1>::Zero(),
-				// Record the timestamp (in ILLIXR time) associated with this imu sample.
-				// Used for MTP calculations.
-				datum->time
-			};
-        	open_vins_estimator.get_propagator()->fast_state_propagate(state, timestamp_in_seconds, state_plus, imu_raw_data);
-
-			_m_imu_raw.put(imu_raw_data);
-		}
 
 		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
 		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
@@ -262,18 +246,18 @@ public:
 
 		cv::Mat img0{imu_cam_buffer->img0.value()};
 		cv::Mat img1{imu_cam_buffer->img1.value()};
-		cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
-		cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
 		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
 
 		// Get the pose returned from SLAM
 		state = open_vins_estimator.get_state();
 		Eigen::Vector4d quat = state->_imu->quat();
+		Eigen::Vector3d vel = state->_imu->vel();
 		Eigen::Vector3d pose = state->_imu->pos();
 
 		Eigen::Vector3f swapped_pos = Eigen::Vector3f{float(pose(0)), float(pose(1)), float(pose(2))};
 		Eigen::Quaternionf swapped_rot = Eigen::Quaternionf{float(quat(3)), float(quat(0)), float(quat(1)), float(quat(2))};
+		Eigen::Quaterniond swapped_rot2 = Eigen::Quaterniond{(quat(3)), (quat(0)), (quat(1)), (quat(2))};
 
        	assert(isfinite(swapped_rot.w()));
         assert(isfinite(swapped_rot.x()));
@@ -293,6 +277,25 @@ public:
 				swapped_pos,
 				swapped_rot,
 			});
+
+			_m_imu_integrator_input.put(new (_m_imu_integrator_input.allocate()) imu_integrator_input{
+				timestamp_in_seconds,
+				state->_calib_dt_CAMtoIMU->value()(0),
+				{
+					.gyro_noise = 0.00016968,
+					.acc_noise = 0.002,
+					.gyro_walk = 1.9393e-05,
+					.acc_walk = 0.003,
+					.n_gravity = Eigen::Matrix<double,3,1>(0.0, 0.0, -9.81),
+					.imu_integration_sigma = 1.0,
+					.nominal_rate = 200.0,
+				},
+				state->_imu->bias_a(),
+				state->_imu->bias_g(),
+				pose,
+				vel,
+				swapped_rot2,
+			});
 		}
 
 		// I know, a priori, nobody other plugins subscribe to this topic
@@ -310,7 +313,8 @@ public:
 private:
 	const std::shared_ptr<switchboard> sb;
 	switchboard::writer<pose_type> _m_pose;
-	switchboard::writer<imu_raw_type> _m_imu_raw;
+	switchboard::writer<imu_integrator_input> _m_imu_integrator_input;
+
 	time_type _m_begin;
 	State *state;
 

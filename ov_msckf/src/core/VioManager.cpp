@@ -255,7 +255,7 @@ bool VioManager::try_to_initialize() {
 
     // Return if it failed
     if (!success) {
-		std::cout << "NOT ENOUGH POINTS -- Tracking failed" << std::endl;
+        std::cout << "NOT ENOUGH POINTS -- Tracking failed" << std::endl;
         return false;
     }
 
@@ -315,14 +315,14 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     // This isn't super ideal, but it keeps the logic after this easier...
     // We can start processing things when we have at least 5 clones since we can start triangulating things...
     if((int)state->_clones_IMU.size() < std::min(state->_options.max_clone_size,5)) {
-		printf("waiting for enough clone states (%d of %d)....\n",(int)state->_clones_IMU.size(),std::min(state->_options.max_clone_size,5));
+        printf("waiting for enough clone states (%d of %d)....\n",(int)state->_clones_IMU.size(),std::min(state->_options.max_clone_size,5));
         return;
     }
 
     // Return if we where unable to propagate
     if(state->_timestamp != timestamp) {
-		printf(RED "[PROP]: Propagator unable to propagate the state forward in time!\n" RESET);
-		printf(RED "[PROP]: It has been %.3f since last time we propagated\n" RESET,timestamp-state->_timestamp);
+        printf(RED "[PROP]: Propagator unable to propagate the state forward in time!\n" RESET);
+        printf(RED "[PROP]: It has been %.3f since last time we propagated\n" RESET,timestamp-state->_timestamp);
         return;
     }
 
@@ -576,69 +576,45 @@ void VioManager::do_feature_propagate_update(double timestamp) {
     }
     timelastupdate = timestamp;
 
-    // Debug, print our current state
-    #ifndef NDEBUG
-        printf("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
-                state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3),
-                state->_imu->pos()(0),state->_imu->pos()(1),state->_imu->pos()(2),distance);
-        printf("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
-                state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2),
-                state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
-    #endif
-
-
-    // Debug for camera imu offset
 #ifndef NDEBUG
+    // Debug, print our current state
+    printf("q_GtoI = %.3f,%.3f,%.3f,%.3f | p_IinG = %.3f,%.3f,%.3f | dist = %.2f (meters)\n",
+            state->_imu->quat()(0),state->_imu->quat()(1),state->_imu->quat()(2),state->_imu->quat()(3),
+            state->_imu->pos()(0),state->_imu->pos()(1),state->_imu->pos()(2),distance);
+    printf("bg = %.4f,%.4f,%.4f | ba = %.4f,%.4f,%.4f\n",
+             state->_imu->bias_g()(0),state->_imu->bias_g()(1),state->_imu->bias_g()(2),
+             state->_imu->bias_a()(0),state->_imu->bias_a()(1),state->_imu->bias_a()(2));
+#endif
+
+
+#ifndef NDEBUG
+    // Debug for camera imu offset
     if(state->_options.do_calib_camera_timeoffset) {
             printf("camera-imu timeoffset = %.5f\n",state->_calib_dt_CAMtoIMU->value()(0));
     }
 #endif
 
-    // Debug for camera intrinsics
 #ifndef NDEBUG
+    // Debug for camera intrinsics
     if(state->_options.do_calib_camera_intrinsics) {
         for(int i=0; i<state->_options.num_cameras; i++) {
             Vec* calib = state->_cam_intrinsics.at(i);
-                printf("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
-                        calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
-                        calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
+            printf("cam%d intrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f,%.3f\n",(int)i,
+                    calib->value()(0),calib->value()(1),calib->value()(2),calib->value()(3),
+                    calib->value()(4),calib->value()(5),calib->value()(6),calib->value()(7));
         }
     }
 #endif
 
-    // Debug for camera extrinsics
 #ifndef NDEBUG
+    // Debug for camera extrinsics
     if(state->_options.do_calib_camera_pose) {
         for(int i=0; i<state->_options.num_cameras; i++) {
             PoseJPL* calib = state->_calib_IMUtoCAM.at(i);
-                printf("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
-                        calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
-                        calib->pos()(0),calib->pos()(1),calib->pos()(2));
+            printf("cam%d extrinsics = %.3f,%.3f,%.3f,%.3f | %.3f,%.3f,%.3f\n",(int)i,
+                    calib->quat()(0),calib->quat()(1),calib->quat()(2),calib->quat()(3),
+                    calib->pos()(0),calib->pos()(1),calib->pos()(2));
         }
     }
 #endif
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
