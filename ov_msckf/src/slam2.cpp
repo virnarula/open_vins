@@ -22,6 +22,11 @@ using namespace ov_msckf;
 // TODO: Pull from config YAML file
 //#define ZED
 
+std::string getenv_or(std::string var, std::string default_) {
+	const char* val = std::getenv(var.c_str());
+	return val ? std::string{val} : default_;
+}
+
 VioManagerOptions create_params()
 {
 	VioManagerOptions params;
@@ -132,15 +137,18 @@ VioManagerOptions create_params()
   // Hand tuned
   params.num_pts = 200;
 #else
-  params.num_pts = 150;
+  unsigned num_pts = std::stoi(getenv_or("num_pts", "150"));
+  params.num_pts = num_pts;
 #endif
 	params.msckf_options.chi2_multipler = 1;
 	params.knn_ratio = .7;
 
 	params.state_options.imu_avg = true;
 	params.state_options.do_fej = true;
-	params.state_options.use_rk4_integration = true;
-	params.use_stereo = true;
+	int use_rk4_integration = std::stoi(getenv_or("use_rk4_integration", "1"));
+	params.state_options.use_rk4_integration = !!use_rk4_integration;
+	int use_stereo = std::stoi(getenv_or("use_stereo", "1"));
+	params.use_stereo = !!use_stereo;
 	params.state_options.do_calib_camera_pose = true;
 	params.state_options.do_calib_camera_intrinsics = true;
 	params.state_options.do_calib_camera_timeoffset = true;
@@ -171,6 +179,15 @@ VioManagerOptions create_params()
 
 	params.state_options.feat_rep_slam = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
   params.state_options.feat_rep_aruco = LandmarkRepresentation::from_string("ANCHORED_FULL_INVERSE_DEPTH");
+
+  // int downsample_cameras = std::stoi(getenv_or("downsample_cameras", "0"));
+  // params.downsample_cameras = !!downsample_cameras;
+
+  // int try_zupt = std::stoi(getenv_or("try_zupt", "0"));
+  // params.try_zupt = !!try_zupt;
+
+  int use_klt = std::stoi(getenv_or("use_klt", "1"));
+  params.use_klt = !!use_klt;
 
 	return params;
 }
@@ -213,8 +230,6 @@ public:
 			return;
 		}
 
-		// This ensures that every data point is coming in chronological order If youre failing this assert, 
-		// make sure that your data folder matches the name in offline_imu_cam/plugin.cc
 		double timestamp_in_seconds = (double(datum->dataset_time) / NANO_SEC);
 		assert(timestamp_in_seconds > previous_timestamp);
 		previous_timestamp = timestamp_in_seconds;
@@ -298,13 +313,6 @@ public:
 			});
 		}
 
-		// I know, a priori, nobody other plugins subscribe to this topic
-		// Therefore, I can const the cast away, and delete stuff
-		// This fixes a memory leak.
-		// -- Sam at time t1
-		// Turns out, this is no longer correct. debbugview uses it
-		// const_cast<imu_cam_type*>(imu_cam_buffer)->img0.reset();
-		// const_cast<imu_cam_type*>(imu_cam_buffer)->img1.reset();
 		imu_cam_buffer = datum;
 	}
 
