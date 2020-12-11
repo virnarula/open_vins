@@ -25,6 +25,7 @@
 #include <opencv2/xfeatures2d.hpp>
 
 #include "TrackBase.h"
+#include "../../../ov_msckf/src/common/cpu_timer3.hpp"
 
 namespace ov_core {
 
@@ -165,6 +166,12 @@ namespace ov_core {
         // Descriptor matrices
         std::unordered_map<size_t, cv::Mat> desc_last;
 
+		CPU_TIMER3_THREAD_CONTEXT robust_match_l = CPU_TIMER3_MAKE_THREAD_CONTEXT();
+		CPU_TIMER3_THREAD_CONTEXT robust_match_r = CPU_TIMER3_MAKE_THREAD_CONTEXT();
+		CPU_TIMER3_THREAD_CONTEXT preform_griding_0 = CPU_TIMER3_MAKE_THREAD_CONTEXT();
+		CPU_TIMER3_THREAD_CONTEXT preform_griding_1 = CPU_TIMER3_MAKE_THREAD_CONTEXT();
+		CPU_TIMER3_THREAD_CONTEXT orb_compute_0 = CPU_TIMER3_MAKE_THREAD_CONTEXT();
+		CPU_TIMER3_THREAD_CONTEXT orb_compute_1 = CPU_TIMER3_MAKE_THREAD_CONTEXT();
 
     };
 

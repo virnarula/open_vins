@@ -22,7 +22,6 @@
 #include "types/Landmark.h"
 
 #include "utils/parse_cmd.h"
-#include "../common/cpu_timer.hpp"
 
 using namespace ov_core;
 using namespace ov_type;
@@ -175,8 +174,14 @@ void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Ma
     if(params.use_stereo) {
         trackFEATS->feed_stereo(timestamp, img0, img1, cam_id0, cam_id1);
     } else {
-        std::thread t_l = timed_thread("slam2 feed l", &TrackBase::feed_monocular, trackFEATS, boost::ref(timestamp), boost::ref(img0), boost::ref(cam_id0));
-        std::thread t_r = timed_thread("slam2 feed r", &TrackBase::feed_monocular, trackFEATS, boost::ref(timestamp), boost::ref(img1), boost::ref(cam_id1));
+        std::thread t_l {[&] {
+			CPU_TIMER3_SET_THREAD_CONTEXT(feed_monocular_0);
+			trackFEATS->feed_monocular(boost::ref(timestamp), boost::ref(img0), boost::ref(cam_id0));
+		}};
+        std::thread t_r {[&] {
+			CPU_TIMER3_SET_THREAD_CONTEXT(feed_monocular_1);
+			trackFEATS->feed_monocular(boost::ref(timestamp), boost::ref(img1), boost::ref(cam_id1));
+		}};
         t_l.join();
         t_r.join();
     }

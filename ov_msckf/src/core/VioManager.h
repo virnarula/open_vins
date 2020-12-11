@@ -43,7 +43,7 @@
 #include "update/UpdaterSLAM.h"
 
 #include "VioManagerOptions.h"
-
+#include "../common/cpu_timer3.hpp"
 
 namespace ov_msckf {
 
@@ -279,6 +279,9 @@ namespace ov_msckf {
 
     };
 
+
+	CPU_TIMER3_THREAD_CONTEXT feed_monocular_0 = CPU_TIMER3_MAKE_THREAD_CONTEXT();
+	CPU_TIMER3_THREAD_CONTEXT feed_monocular_1 = CPU_TIMER3_MAKE_THREAD_CONTEXT();
 
 }
 

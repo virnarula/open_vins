@@ -19,7 +19,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "TrackDescriptor.h"
-#include "../../../ov_msckf/src/common/cpu_timer.hpp"
 
 using namespace ov_core;
 
@@ -184,10 +183,16 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     std::vector<cv::DMatch> matches_ll, matches_rr;
 
     // Lets match temporally
-    std::thread t_ll = timed_thread("slam2 rob_match l", &TrackDescriptor::robust_match, this, boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new),
-                                       boost::ref(desc_last[cam_id_left]), boost::ref(desc_left_new), cam_id_left, cam_id_left, boost::ref(matches_ll));
-    std::thread t_rr = timed_thread("slam2 rob_match r", &TrackDescriptor::robust_match, this, boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new),
-                                       boost::ref(desc_last[cam_id_right]), boost::ref(desc_right_new), cam_id_right, cam_id_right, boost::ref(matches_rr));
+    std::thread t_ll {[&]{
+		CPU_TIMER3_SET_THREAD_CONTEXT(robust_match_l);
+		robust_match(boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new),
+		             boost::ref(desc_last[cam_id_left]), boost::ref(desc_left_new), cam_id_left, cam_id_left, boost::ref(matches_ll));
+	}};
+    std::thread t_rr {[&]{
+		CPU_TIMER3_SET_THREAD_CONTEXT(robust_match_l);
+		robust_match(boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new),
+		             boost::ref(desc_last[cam_id_right]), boost::ref(desc_right_new), cam_id_right, cam_id_right, boost::ref(matches_rr));
+	}};
 
     // Wait till both threads finish
     t_ll.join();
@@ -340,10 +345,16 @@ void TrackDescriptor::perform_detection_stereo(const cv::Mat &img0, const cv::Ma
 
     // Extract our features (use FAST with griding)
     std::vector<cv::KeyPoint> pts0_ext, pts1_ext;
-    std::thread t_0 = timed_thread("slam2 grid l", &Grider_FAST::perform_griding, boost::cref(img0), boost::ref(pts0_ext),
-                                      num_features, grid_x, grid_y, threshold, true);
-    std::thread t_1 = timed_thread("slam2 grid r", &Grider_FAST::perform_griding, boost::cref(img1), boost::ref(pts1_ext),
-                                      num_features, grid_x, grid_y, threshold, true);
+    std::thread t_0 {[&]{
+		CPU_TIMER3_SET_THREAD_CONTEXT(preform_griding_0);
+		Grider_FAST::perform_griding(boost::cref(img0), boost::ref(pts0_ext),
+		                             num_features, grid_x, grid_y, threshold, true);
+	}};
+    std::thread t_1 {[&]{
+		CPU_TIMER3_SET_THREAD_CONTEXT(preform_griding_1);
+		Grider_FAST::perform_griding(boost::cref(img1), boost::ref(pts1_ext),
+		                             num_features, grid_x, grid_y, threshold, true);
+	}};
 
     // Wait till both threads finish
     t_0.join();
@@ -353,8 +364,14 @@ void TrackDescriptor::perform_detection_stereo(const cv::Mat &img0, const cv::Ma
     cv::Mat desc0_ext, desc1_ext;
 
     // Use C++11 lamdas so we can pass all theses variables by reference
-    std::thread t_desc0 = timed_thread("slam2 orb l", [&]{this->orb0->compute(img0, pts0_ext, desc0_ext);});
-    std::thread t_desc1 = timed_thread("slam2 orb r", [&]{this->orb1->compute(img1, pts1_ext, desc1_ext);});
+	std::thread t_desc0 {[&]{
+		CPU_TIMER3_SET_THREAD_CONTEXT(orb_compute_0);
+		orb0->compute(img0, pts0_ext, desc0_ext);
+	}};
+	std::thread t_desc1 {[&]{
+		CPU_TIMER3_SET_THREAD_CONTEXT(orb_compute_1);
+		orb1->compute(img1, pts1_ext, desc1_ext);
+	}};
     //std::thread t_desc0 = std::thread([this,&img0,&pts0_ext,&desc0_ext]{this->freak0->compute(img0, pts0_ext, desc0_ext);});
     //std::thread t_desc1 = std::thread([this,&img1,&pts1_ext,&desc1_ext]{this->freak1->compute(img1, pts1_ext, desc1_ext);});
 
