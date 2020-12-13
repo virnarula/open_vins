@@ -69,6 +69,9 @@ namespace ov_msckf {
          */
         VioManager(VioManagerOptions& params_);
         
+		~VioManager() {
+			CPU_TIMER3_SERIALIZE();
+		}
 
         /**
          * @brief Feed function for inertial data

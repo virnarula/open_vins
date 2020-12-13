@@ -46,6 +46,9 @@ namespace ov_core {
     class Grider_FAST {
 
     public:
+		~Grider_FAST() {
+			CPU_TIMER3_SERIALIZE();
+		}
 
 
         /**
@@ -93,8 +96,7 @@ namespace ov_core {
             int ct_rows = std::floor(img.rows/size_y);
             std::vector<std::vector<cv::KeyPoint>> collection(ct_cols*ct_rows);
             parallel_for_(cv::Range(0, ct_cols*ct_rows), [&](const cv::Range& range) {
-				CPU_TIMER3_TIME_BLOCK_("perform_griding_worker", "");
-				// PRINT_RECORD_FOR_THIS_BLOCK("slam2 par_for");
+				CPU_TIMER3_TIME_BLOCK_("Grider_FAST::perform_griding_worker", "");
 				// We time this by timing OpenCV's parallel_for_
 
                 for (int r = range.start; r < range.end; r++) {

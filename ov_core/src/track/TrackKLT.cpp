@@ -22,7 +22,6 @@
 
 using namespace ov_core;
 
-
 void TrackKLT::feed_monocular(double timestamp, cv::Mat &img, size_t cam_id) {
 
     // Start timing
@@ -142,10 +141,12 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     cv::Mat img_left, img_right;
     std::thread t_lhe {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(hist_l);
+		CPU_TIMER3_TIME_BLOCK_("cv::equalizeHist", "");
 		cv::equalizeHist(cv::_InputArray(img_leftin ), cv::_OutputArray(img_left ));
 	}};
     std::thread t_rhe {[&]{
-		CPU_TIMER3_SET_THREAD_CONTEXT(hist_r);
+		CPU_TIMER3_SET_THREAD_CONTEXT(hist_r); 
+		CPU_TIMER3_TIME_BLOCK_("cv::equalizeHist", "");
 		cv::equalizeHist(cv::_InputArray(img_rightin), cv::_OutputArray(img_right ));
 	}};
     t_lhe.join();
@@ -155,12 +156,14 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::vector<cv::Mat> imgpyr_left, imgpyr_right;
     std::thread t_lp {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(pyramid_l);
+		CPU_TIMER3_TIME_BLOCK_("cv::buildOpticalFlowPyramid", "");
 		cv::buildOpticalFlowPyramid(cv::_InputArray(img_left),
                                     cv::_OutputArray(imgpyr_left), win_size, pyr_levels, false,
                                     cv::BORDER_REFLECT_101, cv::BORDER_CONSTANT, true);
 	}};
     std::thread t_rp {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(pyramid_r);
+		CPU_TIMER3_TIME_BLOCK_("cv::buildOpticalFlowPyramid", "");
 		cv::buildOpticalFlowPyramid(cv::_InputArray(img_right),
                                     cv::_OutputArray(imgpyr_right), win_size, pyr_levels, false,
                                     cv::BORDER_REFLECT_101, cv::BORDER_CONSTANT, true);
@@ -201,11 +204,13 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     // Lets track temporally
     std::thread t_ll {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(matching_l);
+		CPU_TIMER3_TIME_BLOCK_("perform_matching", "");
 		perform_matching(boost::cref(img_pyramid_last[cam_id_left]), boost::cref(imgpyr_left),
 		                 boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new), cam_id_left, cam_id_left, boost::ref(mask_ll));
 	}};
     std::thread t_rr {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(matching_r);
+		CPU_TIMER3_TIME_BLOCK_("perform_matching", "");
 		perform_matching(boost::cref(img_pyramid_last[cam_id_right]), boost::cref(imgpyr_right),
 		                 boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new), cam_id_right, cam_id_right, boost::ref(mask_rr));
 	}};

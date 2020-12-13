@@ -195,6 +195,7 @@ void VioManager::feed_measurement_monocular(double timestamp, cv::Mat& img0, siz
 }
 
 void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Mat& img1, size_t cam_id0, size_t cam_id1) {
+	CPU_TIMER3_TIME_BLOCK();
 
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
@@ -233,10 +234,12 @@ void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Ma
     } else {
         std::thread t_l {[&] {
 			CPU_TIMER3_SET_THREAD_CONTEXT(feed_monocular_0);
+			CPU_TIMER3_TIME_BLOCK_("TrackBase::feed_monocular", "");
 			trackFEATS->feed_monocular(boost::ref(timestamp), boost::ref(img0), boost::ref(cam_id0));
 		}};
         std::thread t_r {[&] {
 			CPU_TIMER3_SET_THREAD_CONTEXT(feed_monocular_1);
+			CPU_TIMER3_TIME_BLOCK_("TrackBase::feed_monocular", "");
 			trackFEATS->feed_monocular(boost::ref(timestamp), boost::ref(img1), boost::ref(cam_id1));
 		}};
         t_l.join();

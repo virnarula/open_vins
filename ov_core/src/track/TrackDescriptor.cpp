@@ -185,11 +185,13 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     // Lets match temporally
     std::thread t_ll {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(robust_match_l);
+		CPU_TIMER3_TIME_BLOCK_("robust_match", "");
 		robust_match(boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new),
 		             boost::ref(desc_last[cam_id_left]), boost::ref(desc_left_new), cam_id_left, cam_id_left, boost::ref(matches_ll));
 	}};
     std::thread t_rr {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(robust_match_l);
+		CPU_TIMER3_TIME_BLOCK_("robust_match", "");
 		robust_match(boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new),
 		             boost::ref(desc_last[cam_id_right]), boost::ref(desc_right_new), cam_id_right, cam_id_right, boost::ref(matches_rr));
 	}};
@@ -347,11 +349,13 @@ void TrackDescriptor::perform_detection_stereo(const cv::Mat &img0, const cv::Ma
     std::vector<cv::KeyPoint> pts0_ext, pts1_ext;
     std::thread t_0 {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(preform_griding_0);
+		CPU_TIMER3_TIME_BLOCK_("Grider_FAST::perform_griding", "");
 		Grider_FAST::perform_griding(boost::cref(img0), boost::ref(pts0_ext),
 		                             num_features, grid_x, grid_y, threshold, true);
 	}};
     std::thread t_1 {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(preform_griding_1);
+		CPU_TIMER3_TIME_BLOCK_("Grider_FAST::perform_griding", "");
 		Grider_FAST::perform_griding(boost::cref(img1), boost::ref(pts1_ext),
 		                             num_features, grid_x, grid_y, threshold, true);
 	}};
@@ -366,10 +370,12 @@ void TrackDescriptor::perform_detection_stereo(const cv::Mat &img0, const cv::Ma
     // Use C++11 lamdas so we can pass all theses variables by reference
 	std::thread t_desc0 {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(orb_compute_0);
+		CPU_TIMER3_TIME_BLOCK_("cv::ORB::compute", "");
 		orb0->compute(img0, pts0_ext, desc0_ext);
 	}};
 	std::thread t_desc1 {[&]{
 		CPU_TIMER3_SET_THREAD_CONTEXT(orb_compute_1);
+		CPU_TIMER3_TIME_BLOCK_("cv::ORB::compute", "");
 		orb1->compute(img1, pts1_ext, desc1_ext);
 	}};
     //std::thread t_desc0 = std::thread([this,&img0,&pts0_ext,&desc0_ext]{this->freak0->compute(img0, pts0_ext, desc0_ext);});
