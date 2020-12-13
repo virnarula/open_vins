@@ -46,10 +46,6 @@ namespace ov_core {
     class Grider_FAST {
 
     public:
-		~Grider_FAST() {
-			CPU_TIMER3_SERIALIZE();
-		}
-
 
         /**
          * @brief Compare keypoints based on their response value.

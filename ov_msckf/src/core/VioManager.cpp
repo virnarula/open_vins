@@ -195,8 +195,6 @@ void VioManager::feed_measurement_monocular(double timestamp, cv::Mat& img0, siz
 }
 
 void VioManager::feed_measurement_stereo(double timestamp, cv::Mat& img0, cv::Mat& img1, size_t cam_id0, size_t cam_id1) {
-	CPU_TIMER3_TIME_BLOCK();
-
     // Start timing
     rT1 =  boost::posix_time::microsec_clock::local_time();
 
