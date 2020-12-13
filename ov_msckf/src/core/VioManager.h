@@ -61,15 +61,15 @@ namespace ov_msckf {
 
     public:
 
+		// ~VioManager() {
+		// 	CPU_TIMER3_SERIALIZE();
+		// }
+
         /**
          * @brief Default constructor, will load all configuration variables
          * @param params_ Parameters loaded from either ROS or CMDLINE
          */
         VioManager(VioManagerOptions& params_);
-        
-		~VioManager() {
-			CPU_TIMER3_SERIALIZE();
-		}
 
         /**
          * @brief Feed function for inertial data
