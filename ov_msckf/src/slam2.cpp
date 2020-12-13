@@ -188,30 +188,12 @@ public:
 		_m_begin = std::chrono::system_clock::now();
 		imu_cam_buffer = NULL;
 
-		_m_pose->put(
-			new pose_type{
-				.sensor_time = std::chrono::time_point<std::chrono::system_clock>{},
-				.position = Eigen::Vector3f{0, 0, 0},
-				.orientation = Eigen::Quaternionf{1, 0, 0, 0}
-			}
-		);
-
-#ifdef CV_HAS_METRICS
-		cv::metrics::setAccount(new std::string{"-1"});
-#endif
-
-	}
-
-
-	virtual void start() override {
-		plugin::start();
 		sb->schedule<imu_cam_type>(id, "imu_cam", [&](const imu_cam_type *datum) {
 			this->feed_imu_cam(datum);
 		});
 	}
 
 
-	std::size_t iteration_no = 0;
 	void feed_imu_cam(const imu_cam_type *datum) {
 		// Ensures that slam doesnt start before valid IMU readings come in
 		if (datum == NULL) {
@@ -237,23 +219,14 @@ public:
 			return;
 		}
 
-#ifdef CV_HAS_METRICS
-		cv::metrics::setAccount(new std::string{std::to_string(iteration_no)});
-		iteration_no++;
-		if (iteration_no % 20 == 0) {
-			cv::metrics::dump();
-		}
-#else
-#warning "No OpenCV metrics available. Please recompile OpenCV from git clone --branch 3.4.6-instrumented https://github.com/ILLIXR/opencv/. (see install_deps.sh)"
-#endif
-
 		cv::Mat img0{*imu_cam_buffer->img0.value()};
 		cv::Mat img1{*imu_cam_buffer->img1.value()};
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
 		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
 
 		// Get the pose returned from SLAM
-		state = open_vins_estimator.get_state();
+		State* state = open_vins_estimator.get_state();
+		assert(state);
 		Eigen::Vector4d quat = state->_imu->quat();
 		Eigen::Vector3d vel = state->_imu->vel();
 		Eigen::Vector3d pose = state->_imu->pos();
@@ -312,15 +285,12 @@ public:
 		imu_cam_buffer = datum;
 	}
 
-	virtual ~slam2() override {}
-
 private:
 	const std::shared_ptr<switchboard> sb;
 	std::unique_ptr<writer<pose_type>> _m_pose;
 	std::unique_ptr<writer<imu_integrator_input>> _m_imu_integrator_input;
 
 	time_type _m_begin;
-	State *state;
 
 	VioManagerOptions manager_params = create_params();
 	VioManager open_vins_estimator;
