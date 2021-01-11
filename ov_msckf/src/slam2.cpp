@@ -224,6 +224,10 @@ public:
 
 
 	void feed_imu_cam(switchboard::ptr<const imu_cam_type> datum, std::size_t iteration_no) {
+
+		auto start = std::chrono::steady_clock::now();
+		auto start_comptime = thread_cpu_time();
+
 		// Ensures that slam doesnt start before valid IMU readings come in
 		if (datum == NULL) {
 			assert(previous_timestamp == 0);
@@ -314,7 +318,18 @@ public:
 		}
 
 		imu_cam_buffer = datum;
+
+		auto stop = std::chrono::steady_clock::now();
+		auto stop_comptime = thread_cpu_time();
+		if (stop - start > std::chrono::milliseconds{100}) {
+			std::cerr << "\e[1;34mSLAM is slow. Ratio = " << slow_count << ":" << fast_count << ", wall time = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << "ms, comp time = " << std::chrono::duration_cast<std::chrono::milliseconds>(stop_comptime - start_comptime).count() << "ms, timestamp = epoch+" << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count() << "ms\e[0m\n";
+			slow_count++;
+		} else {
+			fast_count++;
+		}
 	}
+
+	size_t slow_count = 0, fast_count = 0;
 
 	virtual ~slam2() override {}
 

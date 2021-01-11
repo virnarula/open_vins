@@ -33,7 +33,6 @@
 
 #include "../../../ov_msckf/src/common/cpu_timer.hpp"
 
-
 namespace ov_core {
 
     /**
