@@ -185,32 +185,16 @@ public:
 		, _m_imu_integrator_input{sb->get_writer<imu_integrator_input>("imu_integrator_input")}
 		, open_vins_estimator{manager_params}
 	{
-		_m_pose.put(new (_m_pose.allocate()) pose_type{
-			std::chrono::time_point<std::chrono::system_clock>{},
-			Eigen::Vector3f{0, 0, 0},
-			Eigen::Quaternionf{1, 0, 0, 0}
-		});
-
-#ifdef CV_HAS_METRICS
-		cv::metrics::setAccount(new std::string{"-1"});
-#endif
-
-	}
-
-
-	virtual void start() override {
-		plugin::start();
 		sb->schedule<imu_cam_type>(id, "imu_cam", [&](switchboard::ptr<const imu_cam_type> datum, std::size_t iteration_no) {
 			this->feed_imu_cam(datum, iteration_no);
 		});
 	}
 
-
 	void feed_imu_cam(switchboard::ptr<const imu_cam_type> datum, std::size_t iteration_no) {
 		// Ensures that slam doesnt start before valid IMU readings come in
-		if (datum == NULL) {
-			assert(previous_timestamp == 0);
-			return;
+		if (datum == nullptr) {
+			std::cerr << "slam2:feed_imu_cam datum == nullptr\n";
+			abort();
 		}
 
 		// This ensures that every data point is coming in chronological order If youre failing this assert, 
@@ -235,14 +219,6 @@ public:
 			return;
 		}
 
-#ifdef CV_HAS_METRICS
-		cv::metrics::setAccount(new std::string{std::to_string(iteration_no)});
-		if (iteration_no % 20 == 0) {
-			cv::metrics::dump();
-		}
-#else
-#warning "No OpenCV metrics available. Please recompile OpenCV from git clone --branch 3.4.6-instrumented https://github.com/ILLIXR/opencv/. (see install_deps.sh)"
-#endif
 
 		cv::Mat img0{imu_cam_buffer->img0.value()};
 		cv::Mat img1{imu_cam_buffer->img1.value()};
@@ -315,7 +291,6 @@ private:
 	switchboard::writer<pose_type> _m_pose;
 	switchboard::writer<imu_integrator_input> _m_imu_integrator_input;
 
-	time_type _m_begin;
 	State *state;
 
 	VioManagerOptions manager_params = create_params();

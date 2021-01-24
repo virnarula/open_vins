@@ -31,7 +31,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "../../../ov_msckf/src/common/cpu_timer.hpp"
+#include "../../../ov_msckf/src/common/cpu_timer/cpu_timer.hpp"
 
 
 namespace ov_core {

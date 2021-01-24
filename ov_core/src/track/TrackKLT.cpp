@@ -19,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "TrackKLT.h"
-#include "../../../ov_msckf/src/common/cpu_timer.hpp"
+#include "../../../ov_msckf/src/common/cpu_timer/cpu_timer.hpp"
 
 using namespace ov_core;
 
@@ -139,23 +139,31 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::unique_lock<std::mutex> lck1(mtx_feeds.at(cam_id_left));
     std::unique_lock<std::mutex> lck2(mtx_feeds.at(cam_id_right));
 
-    // Histogram equalize
-    cv::Mat img_left, img_right;
-    std::thread t_lhe = timed_thread("slam2 hist l", cv::equalizeHist, cv::_InputArray(img_leftin ), cv::_OutputArray(img_left ));
-    std::thread t_rhe = timed_thread("slam2 hist r", cv::equalizeHist, cv::_InputArray(img_rightin), cv::_OutputArray(img_right));
-    t_lhe.join();
-    t_rhe.join();
-
-    // Extract image pyramids (boost seems to require us to put all the arguments even if there are defaults....)
+	cv::Mat img_left, img_right;
     std::vector<cv::Mat> imgpyr_left, imgpyr_right;
-    std::thread t_lp = timed_thread("slam2 pyramid l", &cv::buildOpticalFlowPyramid, cv::_InputArray(img_left),
-                                       cv::_OutputArray(imgpyr_left), win_size, pyr_levels, false,
-                                       cv::BORDER_REFLECT_101, cv::BORDER_CONSTANT, true);
-    std::thread t_rp = timed_thread("slam2 pyramid r", &cv::buildOpticalFlowPyramid, cv::_InputArray(img_right),
-                                       cv::_OutputArray(imgpyr_right), win_size, pyr_levels,
-                                       false, cv::BORDER_REFLECT_101, cv::BORDER_CONSTANT, true);
-    t_lp.join();
-    t_rp.join();
+	parallel_for_(cv::Range(0, 2), [&](const cv::Range& range){
+		for (int i = range.start; i < range.end; i++) {
+			CPU_TIMER_TIME_BLOCK("hist_and_optical_flow")
+
+			// Histogram equalize
+			cv::equalizeHist(
+				cv::_InputArray (i == 0 ? img_leftin : img_rightin),
+				i == 0 ? img_left : img_right
+			);
+
+			// Extract image pyramids (boost seems to require us to put all the arguments even if there are defaults....)
+			cv::buildOpticalFlowPyramid(
+				i == 0 ? img_left : img_right,
+				cv::_OutputArray(i == 0 ? imgpyr_left : imgpyr_right),
+				win_size,
+				pyr_levels,
+				false,
+				cv::BORDER_REFLECT_101,
+				cv::BORDER_CONSTANT,
+				true
+			);
+		}
+	});
     rT2 =  boost::posix_time::microsec_clock::local_time();
 
     // If we didn't have any successful tracks last time, just extract this time
@@ -188,14 +196,20 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::vector<cv::KeyPoint> pts_right_new = pts_last[cam_id_right];
 
     // Lets track temporally
-    std::thread t_ll = timed_thread("slam2 matching l", &TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_left]), boost::cref(imgpyr_left),
-                                       boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new), cam_id_left, cam_id_left, boost::ref(mask_ll));
-    std::thread t_rr = timed_thread("slam2 matching r", &TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_right]), boost::cref(imgpyr_right),
-                                       boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new), cam_id_right, cam_id_right, boost::ref(mask_rr));
-
-    // Wait till both threads finish
-    t_ll.join();
-    t_rr.join();
+	parallel_for_(cv::Range(0, 2), [&](const cv::Range& range){
+		for (int i = range.start; i < range.end; i++) {
+			CPU_TIMER_TIME_BLOCK("perform_matching");
+			perform_matching(
+				img_pyramid_last[i == 0 ? cam_id_left : cam_id_right],
+				i == 0 ? imgpyr_left : imgpyr_right,
+				pts_last[i == 0 ? cam_id_left : cam_id_right],
+				i == 0 ? pts_left_new : pts_right_new,
+				i == 0 ? cam_id_left : cam_id_right,
+				i == 0 ? cam_id_left : cam_id_right,
+				i == 0 ? mask_ll : mask_rr
+			);
+		}
+	});
     rT4 =  boost::posix_time::microsec_clock::local_time();
 
 
