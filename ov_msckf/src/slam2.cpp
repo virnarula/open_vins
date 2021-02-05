@@ -219,11 +219,16 @@ public:
 			return;
 		}
 
-
-		cv::Mat img0{imu_cam_buffer->img0.value()};
-		cv::Mat img1{imu_cam_buffer->img1.value()};
+		{
+			CPU_TIMER_TIME_BLOCK("cv::Mat copy");
+			cv::Mat img0{imu_cam_buffer->img0.value()};
+			cv::Mat img1{imu_cam_buffer->img1.value()};
+		}
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
-		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
+		{
+			CPU_TIMER_TIME_BLOCK("feed_measurement_stereo");
+			open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
+		}
 
 		// Get the pose returned from SLAM
 		state = open_vins_estimator.get_state();
@@ -244,6 +249,8 @@ public:
         assert(isfinite(swapped_pos[2]));
 
 		if (open_vins_estimator.initialized()) {
+			CPU_TIMER_TIME_BLOCK("publish");
+
 			if (isUninitialized) {
 				isUninitialized = false;
 			}
