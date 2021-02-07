@@ -219,10 +219,13 @@ public:
 			return;
 		}
 
+		cv::Mat img0;
+		cv::Mat img1;
+
 		{
 			CPU_TIMER_TIME_BLOCK("cv::Mat copy");
-			cv::Mat img0{imu_cam_buffer->img0.value()};
-			cv::Mat img1{imu_cam_buffer->img1.value()};
+			img0 = cv::Mat{imu_cam_buffer->img0.value()};
+			img1 = cv::Mat{imu_cam_buffer->img1.value()};
 		}
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
 		{
