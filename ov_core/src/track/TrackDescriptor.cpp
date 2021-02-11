@@ -19,7 +19,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "TrackDescriptor.h"
+
+#ifdef ILLIXR_INTEGRATION
 #include "../../../ov_msckf/src/common/cpu_timer/cpu_timer.hpp"
+#endif /// ILLIXR_INTEGRATION
 
 using namespace ov_core;
 
@@ -186,7 +189,9 @@ void TrackDescriptor::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat
     // Lets match temporally
 	parallel_for_(cv::Range(0, 2), [&](const cv::Range& range){
 		for (int i = range.start; i < range.end; i++) {
+#ifdef ILLIXR_INTEGRATION
 			CPU_TIMER_TIME_BLOCK("robust_match");
+#endif /// ILLIXR_INTEGRATION
 			robust_match(
 				pts_last[i == 0 ? cam_id_left : cam_id_right],
 				i == 0 ? pts_left_new : pts_right_new,
@@ -348,7 +353,9 @@ void TrackDescriptor::perform_detection_stereo(const cv::Mat &img0, const cv::Ma
     std::vector<cv::KeyPoint> pts0_ext, pts1_ext;
 	parallel_for_(cv::Range(0, 2), [&](const cv::Range& range){
 		for (int i = range.start; i < range.end; i++) {
+#ifdef ILLIXR_INTEGRATION
 			CPU_TIMER_TIME_BLOCK("perform_griding");
+#endif /// ILLIXR_INTEGRATION
 			Grider_FAST::perform_griding(
 				i == 0 ? img0 : img1,
 				i == 0 ? pts0_ext : pts1_ext,
@@ -367,7 +374,9 @@ void TrackDescriptor::perform_detection_stereo(const cv::Mat &img0, const cv::Ma
     // Use C++11 lamdas so we can pass all theses variables by reference
 	parallel_for_(cv::Range(0, 2), [&](const cv::Range& range){
 		for (int i = range.start; i < range.end; i++) {
+#ifdef ILLIXR_INTEGRATION
 			CPU_TIMER_TIME_BLOCK("orb_compute");
+#endif /// ILLIXR_INTEGRATION
 			(i == 0 ? orb0 : orb1)->compute(
 				i == 0 ? img0 : img1,
 				i == 0 ? pts0_ext : pts1_ext,

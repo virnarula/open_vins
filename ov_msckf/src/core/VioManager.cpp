@@ -22,7 +22,10 @@
 #include "types/Landmark.h"
 
 #include "utils/parse_cmd.h"
+
+#ifdef ILLIXR_INTEGRATION
 #include "../common/cpu_timer/cpu_timer.hpp"
+#endif /// ILLIXR_INTEGRATION
 
 using namespace ov_core;
 using namespace ov_type;

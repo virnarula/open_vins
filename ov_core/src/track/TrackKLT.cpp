@@ -19,7 +19,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "TrackKLT.h"
+
+#ifdef ILLIXR_INTEGRATION
 #include "../../../ov_msckf/src/common/cpu_timer/cpu_timer.hpp"
+#endif /// ILLIXR_INTEGRATION
 
 using namespace ov_core;
 
@@ -143,7 +146,9 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::vector<cv::Mat> imgpyr_left, imgpyr_right;
 	parallel_for_(cv::Range(0, 2), [&](const cv::Range& range){
 		for (int i = range.start; i < range.end; i++) {
+#ifdef ILLIXR_INTEGRATION
 			CPU_TIMER_TIME_BLOCK("hist_and_optical_flow")
+#endif /// ILLIXR_INTEGRATION
 
 			// Histogram equalize
 			cv::equalizeHist(
@@ -198,7 +203,9 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     // Lets track temporally
 	parallel_for_(cv::Range(0, 2), [&](const cv::Range& range){
 		for (int i = range.start; i < range.end; i++) {
+#ifdef ILLIXR_INTEGRATION
 			CPU_TIMER_TIME_BLOCK("perform_matching");
+#endif /// ILLIXR_INTEGRATION
 			perform_matching(
 				img_pyramid_last[i == 0 ? cam_id_left : cam_id_right],
 				i == 0 ? imgpyr_left : imgpyr_right,

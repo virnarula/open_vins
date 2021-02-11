@@ -115,8 +115,7 @@ void Propagator::propagate_and_clone(State* state, double timestamp) {
 
 
 
-
-void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus, ILLIXR::imu_raw_type *imu_raw) {
+void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Matrix<double,13,1> &state_plus) {
 
     // Set the last time offset value if we have just started the system up
     if(!have_last_prop_time_offset) {
@@ -171,11 +170,6 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
             state->_imu->set_fej(imu_x);
 
         }
-
-        imu_raw->w_hat = w_hat;
-        imu_raw->a_hat = a_hat;
-        imu_raw->w_hat2 = w_hat2;
-        imu_raw->a_hat2 = a_hat2;
     }
 
     // Now record what the predicted state should be
@@ -185,9 +179,6 @@ void Propagator::fast_state_propagate(State *state, double timestamp, Eigen::Mat
     state_plus.block(7,0,3,1) = state->_imu->vel();    
     if(prop_data.size() > 1) state_plus.block(10,0,3,1) = prop_data.at(prop_data.size()-2).wm - state->_imu->bias_g();
     else if(!prop_data.empty()) state_plus.block(10,0,3,1) = prop_data.at(prop_data.size()-1).wm - state->_imu->bias_g();
-    imu_raw->quat = state->_imu->quat();
-    imu_raw->pos = state->_imu->pos();
-    imu_raw->vel = state->_imu->vel();    
 
     // Finally replace the imu with the original state we had
     state->_imu->set_value(orig_val);

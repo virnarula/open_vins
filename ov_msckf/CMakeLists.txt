@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8.8)
 
+option(ILLIXR_INTEGRATION "Flag enabling integrated (non-standalone) mode" OFF)
+
 # Project name
 project(ov_msckf)
 
@@ -41,11 +43,17 @@ else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
 endif()
 
-# Enable compile optimizations
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
-
-# Enable debug flags (use if you want to debug in gdb)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wuninitialized")
+if (ILLIXR_INTEGRATION)
+    # Enable compile optimizations
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DILLIXR_INTEGRATION -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+    # Enable debug flags (use if you want to debug in gdb)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wuninitialized")
+else()
+    # Enable compile optimizations
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+    # Enable debug flags (use if you want to debug in gdb)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -Wall -Wuninitialized")
+endif()
 
 # Include our header files
 include_directories(
@@ -98,37 +106,10 @@ target_include_directories(ov_msckf_lib PUBLIC src)
 # Make binary files!
 ##################################################
 
-add_executable(run_simulation src/run_simulation.cpp)
-target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
-
-if (catkin_FOUND)
-
-    add_executable(run_serial_msckf src/ros_serial_msckf.cpp)
-    target_link_libraries(run_serial_msckf ov_msckf_lib ${thirdparty_libraries})
-
-    add_executable(run_illixr_msckf src/run_illixr_msckf.cpp)
-    target_link_libraries(run_illixr_msckf ov_msckf_lib ${thirdparty_libraries})
-
-    add_executable(run_subscribe_msckf src/ros_subscribe_msckf.cpp)
-    target_link_libraries(run_subscribe_msckf ov_msckf_lib ${thirdparty_libraries})
-
-    add_executable(run_simulation src/run_simulation.cpp)
-    target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
-
+if (ILLIXR_INTEGRATION)
+    add_library(slam2 SHARED src/slam2.cpp)
+    target_link_libraries(slam2 ov_msckf_lib ${thirdparty_libraries})
 else()
-
-    add_executable(run_simulation src/run_simulation.cpp)
-    target_link_libraries(run_simulation ov_msckf_lib ${thirdparty_libraries})
-
     add_executable(run_illixr_msckf src/run_illixr_msckf.cpp)
     target_link_libraries(run_illixr_msckf ov_msckf_lib ${thirdparty_libraries})
-
 endif()
-
-#add_executable(test_sim_meas src/test_sim_meas.cpp)
-#target_link_libraries(test_sim_meas ov_msckf_lib ${thirdparty_libraries})
-
-#add_executable(test_sim_repeat src/test_sim_repeat.cpp)
-#target_link_libraries(test_sim_repeat ov_msckf_lib ${thirdparty_libraries})
-
-

@@ -31,7 +31,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#ifdef ILLIXR_INTEGRATION
 #include "../../../ov_msckf/src/common/cpu_timer/cpu_timer.hpp"
+#endif /// ILLIXR_INTEGRATION
 
 
 namespace ov_core {
@@ -97,7 +99,9 @@ namespace ov_core {
 				// We time this by timing OpenCV's parallel_for_
 
                 for (int r = range.start; r < range.end; r++) {
+#ifdef ILLIXR_INTEGRATION
 					CPU_TIMER_TIME_FUNCTION();
+#endif /// ILLIXR_INTEGRATION
 
                     // Calculate what cell xy value we are in
                     int x = r%ct_cols*size_x;
