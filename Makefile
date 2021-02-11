@@ -1,4 +1,5 @@
 nproc=$(shell python3 -c 'import multiprocessing; print( max(multiprocessing.cpu_count() - 1, 1))')
+use_integ=$(ILLIXR_INTEGRATION)
 
 CXX := clang++-10
 CC := clang-10
@@ -11,22 +12,24 @@ plugin.dbg.so: build/Debug/Makefile
 	true
 
 .PHONY: plugin.opt.so
-plugin.opt.so: build/Release/Makefile
-	make -C build/Release "-j$(nproc)" && \
+plugin.opt.so: build/RelWithDebInfo/Makefile
+	make -C build/RelWithDebInfo "-j$(nproc)" && \
 	rm -f $@ && \
-	ln -s build/Release/ov_msckf/libslam2.so $@ && \
+	ln -s build/RelWithDebInfo/ov_msckf/libslam2.so $@ && \
 	true
 
-build/%/Makefile:
+build/Debug/Makefile:
 	mkdir -p build/Debug && \
 	cd build/Debug && \
-	cmake -DCMAKE_BUILD_TYPE=Debug  -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_C_COMPILER=$(CC) ../.. && \
+	echo "Using ILLIXR_INTEGRATION: $(use_integ)" && \
+	cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_C_COMPILER=$(CC) -DILLIXR_INTEGRATION=$(use_integ) ../.. && \
 	true
 
-build/Release/Makefile:
-	mkdir -p build/Release && \
-	cd build/Release && \
-	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_C_COMPILER=$(CC) ../.. && \
+build/RelWithDebInfo/Makefile:
+	mkdir -p build/RelWithDebInfo && \
+	cd build/RelWithDebInfo && \
+	echo "Using ILLIXR_INTEGRATION: $(use_integ)" && \
+	cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=$(CXX) -DCMAKE_C_COMPILER=$(CC) -DILLIXR_INTEGRATION=$(use_integ) ../.. && \
 	true
 
 tests/run:

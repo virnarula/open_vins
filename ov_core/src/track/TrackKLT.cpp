@@ -19,7 +19,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "TrackKLT.h"
+
+#ifdef ILLIXR_INTEGRATION
 #include "../../../ov_msckf/src/common/cpu_timer.hpp"
+#endif /// ILLIXR_INTEGRATION
 
 using namespace ov_core;
 
@@ -139,23 +142,38 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::unique_lock<std::mutex> lck1(mtx_feeds.at(cam_id_left));
     std::unique_lock<std::mutex> lck2(mtx_feeds.at(cam_id_right));
 
+#ifdef ILLIXR_INTEGRATION
     // Histogram equalize
     cv::Mat img_left, img_right;
     std::thread t_lhe = timed_thread("slam2 hist l", cv::equalizeHist, cv::_InputArray(img_leftin ), cv::_OutputArray(img_left ));
     std::thread t_rhe = timed_thread("slam2 hist r", cv::equalizeHist, cv::_InputArray(img_rightin), cv::_OutputArray(img_right));
+#else /// ILLIXR_INTEGRATION
+    boost::thread t_lhe = boost::thread(cv::equalizeHist, boost::cref(img_leftin), boost::ref(img_left));
+    boost::thread t_rhe = boost::thread(cv::equalizeHist, boost::cref(img_rightin), boost::ref(img_right));
     t_lhe.join();
     t_rhe.join();
+#endif /// ILLIXR_INTEGRATION
 
     // Extract image pyramids (boost seems to require us to put all the arguments even if there are defaults....)
     std::vector<cv::Mat> imgpyr_left, imgpyr_right;
+#ifdef ILLIXR_INTEGRATION
     std::thread t_lp = timed_thread("slam2 pyramid l", &cv::buildOpticalFlowPyramid, cv::_InputArray(img_left),
                                        cv::_OutputArray(imgpyr_left), win_size, pyr_levels, false,
                                        cv::BORDER_REFLECT_101, cv::BORDER_CONSTANT, true);
     std::thread t_rp = timed_thread("slam2 pyramid r", &cv::buildOpticalFlowPyramid, cv::_InputArray(img_right),
                                        cv::_OutputArray(imgpyr_right), win_size, pyr_levels,
                                        false, cv::BORDER_REFLECT_101, cv::BORDER_CONSTANT, true);
+#else /// ILLIXR_INTEGRATION
+    boost::thread t_lp = boost::thread(cv::buildOpticalFlowPyramid, boost::cref(img_left),
+                                       boost::ref(imgpyr_left), boost::ref(win_size), boost::ref(pyr_levels), false,
+                                       cv::BORDER_REFLECT_101, cv::BORDER_CONSTANT, true);
+    boost::thread t_rp = boost::thread(cv::buildOpticalFlowPyramid, boost::cref(img_right),
+                                       boost::ref(imgpyr_right), boost::ref(win_size), boost::ref(pyr_levels),
+                                       false, cv::BORDER_REFLECT_101, cv::BORDER_CONSTANT, true);
+#endif /// ILLIXR_INTEGRATION
     t_lp.join();
     t_rp.join();
+
     rT2 =  boost::posix_time::microsec_clock::local_time();
 
     // If we didn't have any successful tracks last time, just extract this time
@@ -188,14 +206,22 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::vector<cv::KeyPoint> pts_right_new = pts_last[cam_id_right];
 
     // Lets track temporally
+#ifdef ILLIXR_INTEGRATION
     std::thread t_ll = timed_thread("slam2 matching l", &TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_left]), boost::cref(imgpyr_left),
                                        boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new), cam_id_left, cam_id_left, boost::ref(mask_ll));
     std::thread t_rr = timed_thread("slam2 matching r", &TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_right]), boost::cref(imgpyr_right),
                                        boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new), cam_id_right, cam_id_right, boost::ref(mask_rr));
+#else /// ILLIXR_INTEGRATION
+    boost::thread t_ll = boost::thread(&TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_left]), boost::cref(imgpyr_left),
+                                       boost::ref(pts_last[cam_id_left]), boost::ref(pts_left_new), cam_id_left, cam_id_left, boost::ref(mask_ll));
+    boost::thread t_rr = boost::thread(&TrackKLT::perform_matching, this, boost::cref(img_pyramid_last[cam_id_right]), boost::cref(imgpyr_right),
+                                       boost::ref(pts_last[cam_id_right]), boost::ref(pts_right_new), cam_id_right, cam_id_right, boost::ref(mask_rr));
+#endif /// ILLIXR_INTEGRATION
 
     // Wait till both threads finish
     t_ll.join();
     t_rr.join();
+
     rT4 =  boost::posix_time::microsec_clock::local_time();
 
 
