@@ -1,4 +1,4 @@
-**Part of [ILLIXR](https://github.com/ILLIXR/ILLIXR), the Illinios Extended Reality Benchmark Suite. For instructions on how to use OpenVINS for ILLIXR, see ILLIXR_INSTRUCTIONS.MD**
+**Part of [ILLIXR](https://github.com/ILLIXR/ILLIXR), the Illinios Extended Reality Benchmark Suite. For instructions on how to use OpenVINS for ILLIXR, see [ILLIXR_INSTRUCTIONS][10]**
 
 # OpenVINS
 
@@ -97,3 +97,6 @@ For researchers that have leveraged or compared to this work, please cite the fo
 The codebase is licensed under the [GNU General Public License v3 (GPL-3)](https://www.gnu.org/licenses/gpl-3.0.txt).
 
 
+[//]: # (--- Internal ---)
+
+[10]:   ILLIXR_INSTRUCTIONS.MD
