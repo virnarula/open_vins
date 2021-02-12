@@ -7,7 +7,7 @@ Standalone OpenVINS compilation:
 ```
 git clone https://github.com/ILLIXR/open_vins.git
 cd open_vins
-make
+make [opt|dbg]
 ```
 
 OpenVINS ILLIXR plugin compilation:
@@ -15,10 +15,10 @@ OpenVINS ILLIXR plugin compilation:
 ```
 git clone https://github.com/ILLIXR/open_vins.git
 cd open_vins
-ILLIXR_INTEGRATION=yes make
+ILLIXR_INTEGRATION=yes make [opt|dbg]
 #   or
 export ILLIXR_INTEGRATION=yes
-make
+make [opt|dbg]
 ```
 
 ## Running OpenVINS Standalone
