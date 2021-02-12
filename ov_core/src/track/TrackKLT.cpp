@@ -334,6 +334,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     ids_last[cam_id_right] = good_ids_right;
     rT6 =  boost::posix_time::microsec_clock::local_time();
 
+#ifndef NDEBUG
     // Timing information
     const auto pyramid_time = (rT2-rT1).total_microseconds() * 1e-3;
     const auto detection_time = (rT3-rT2).total_microseconds() * 1e-3;
@@ -362,6 +363,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     printf(WHITE "[AVG-TIME-KLT]: %.4f ms for matching\n" RESET, total_matching_time / (double) total_images);
     printf(WHITE "[AVG-TIME-KLT]: %.4f ms for feature DB update\n" RESET, total_db_time / (double) total_images);
     printf(WHITE "[AVG-TIME-KLT]: %.4f ms for total\n" RESET, total_time / (double) total_images);
+#endif /// NDEBUG
 }
 
 void TrackKLT::perform_detection_monocular(const std::vector<cv::Mat> &img0pyr, std::vector<cv::KeyPoint> &pts0, std::vector<size_t> &ids0) {
