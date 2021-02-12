@@ -142,17 +142,17 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     std::unique_lock<std::mutex> lck1(mtx_feeds.at(cam_id_left));
     std::unique_lock<std::mutex> lck2(mtx_feeds.at(cam_id_right));
 
+    cv::Mat img_left, img_right;
 #ifdef ILLIXR_INTEGRATION
     // Histogram equalize
-    cv::Mat img_left, img_right;
     std::thread t_lhe = timed_thread("slam2 hist l", cv::equalizeHist, cv::_InputArray(img_leftin ), cv::_OutputArray(img_left ));
     std::thread t_rhe = timed_thread("slam2 hist r", cv::equalizeHist, cv::_InputArray(img_rightin), cv::_OutputArray(img_right));
 #else /// ILLIXR_INTEGRATION
     boost::thread t_lhe = boost::thread(cv::equalizeHist, boost::cref(img_leftin), boost::ref(img_left));
     boost::thread t_rhe = boost::thread(cv::equalizeHist, boost::cref(img_rightin), boost::ref(img_right));
+#endif /// ILLIXR_INTEGRATION
     t_lhe.join();
     t_rhe.join();
-#endif /// ILLIXR_INTEGRATION
 
     // Extract image pyramids (boost seems to require us to put all the arguments even if there are defaults....)
     std::vector<cv::Mat> imgpyr_left, imgpyr_right;

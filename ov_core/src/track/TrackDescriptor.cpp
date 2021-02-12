@@ -371,10 +371,15 @@ void TrackDescriptor::perform_detection_stereo(const cv::Mat &img0, const cv::Ma
     cv::Mat desc0_ext, desc1_ext;
 
     // Use C++11 lamdas so we can pass all theses variables by reference
+#ifdef ILLIXR_INTEGRATION
     std::thread t_desc0 = timed_thread("slam2 orb l", [&]{this->orb0->compute(img0, pts0_ext, desc0_ext);});
     std::thread t_desc1 = timed_thread("slam2 orb r", [&]{this->orb1->compute(img1, pts1_ext, desc1_ext);});
+#else /// ILLIXR_INTEGRATION
+    std::thread t_desc0 = std::thread([this,&img0,&pts0_ext,&desc0_ext]{this->orb0->compute(img0, pts0_ext, desc0_ext);});
+    std::thread t_desc1 = std::thread([this,&img1,&pts1_ext,&desc1_ext]{this->orb1->compute(img1, pts1_ext, desc1_ext);});
     //std::thread t_desc0 = std::thread([this,&img0,&pts0_ext,&desc0_ext]{this->freak0->compute(img0, pts0_ext, desc0_ext);});
     //std::thread t_desc1 = std::thread([this,&img1,&pts1_ext,&desc1_ext]{this->freak1->compute(img1, pts1_ext, desc1_ext);});
+#endif /// ILLIXR_INTEGRATION
 
     // Wait till both threads finish
     t_desc0.join();
