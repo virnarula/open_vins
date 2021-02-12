@@ -13,6 +13,7 @@
 #include "common/plugin.hpp"
 #include "common/switchboard.hpp"
 #include "common/data_format.hpp"
+#include "common/realtime_clock.hpp"
 #include "common/phonebook.hpp"
 
 using namespace ILLIXR;
@@ -200,10 +201,11 @@ public:
 		, sb{pb->lookup_impl<switchboard>()}
 		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
 		, _m_imu_integrator_input{sb->get_writer<imu_integrator_input>("imu_integrator_input")}
+		, _m_rtc{pb->lookup_impl<realtime_clock>()}
 		, open_vins_estimator{manager_params}
 	{
 		_m_pose.put(new (_m_pose.allocate()) pose_type{
-			std::chrono::time_point<std::chrono::system_clock>{},
+			_m_rtc->now(),
 			Eigen::Vector3f{0, 0, 0},
 			Eigen::Quaternionf{1, 0, 0, 0}
 		});
@@ -338,7 +340,7 @@ private:
 	switchboard::writer<pose_type> _m_pose;
 	switchboard::writer<imu_integrator_input> _m_imu_integrator_input;
 
-	time_type _m_begin;
+	time_point _m_begin;
 	State *state;
 
 	VioManagerOptions manager_params = create_params();
@@ -347,6 +349,7 @@ private:
 	switchboard::ptr<const imu_cam_type> imu_cam_buffer;
 	double previous_timestamp = 0.0;
 	bool isUninitialized = true;
+	std::shared_ptr<realtime_clock> _m_rtc;
 };
 
 PLUGIN_MAIN(slam2)
