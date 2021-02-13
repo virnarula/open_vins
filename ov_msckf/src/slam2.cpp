@@ -188,11 +188,11 @@ public:
 		, _m_begin{std::chrono::system_clock::now()}
 		, imu_cam_buffer{nullptr}
 	{
-		_m_pose.put(new (_m_pose.allocate()) pose_type{
+		_m_pose.put(_m_pose.allocate(
 			std::chrono::time_point<std::chrono::system_clock>{},
 			Eigen::Vector3f{0, 0, 0},
 			Eigen::Quaternionf{1, 0, 0, 0}
-		});
+		));
 
         // Disabling OpenCV threading is faster on x86 desktop but slower on
         // jetson. Keeping this here for manual disabling.
@@ -298,16 +298,16 @@ public:
 				isUninitialized = false;
 			}
 
-			_m_pose.put(new (_m_pose.allocate()) pose_type{
+			_m_pose.put(_m_pose.allocate(
 				imu_cam_buffer->time,
 				swapped_pos,
-				swapped_rot,
-			});
+				swapped_rot
+			));
 
-			_m_imu_integrator_input->put(new imu_integrator_input{
-				.last_cam_integration_time = timestamp_in_seconds,
-				.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
-				.params = {
+			_m_imu_integrator_input.put(_m_imu_integrator_input.allocate(
+				timestamp_in_seconds,
+				state->_calib_dt_CAMtoIMU->value()(0),
+				imu_params{
 					.gyro_noise = 0.00016968,
 					.acc_noise = 0.002,
 					.gyro_walk = 1.9393e-05,
@@ -316,13 +316,12 @@ public:
 					.imu_integration_sigma = 1.0,
 					.nominal_rate = 200.0,
 				},
-
-				.biasAcc = state->_imu->bias_a(),
-				.biasGyro = state->_imu->bias_g(),
-				.position = pose,
-				.velocity = vel,
-				.quat = swapped_rot2,
-			});
+				state->_imu->bias_a(),
+				state->_imu->bias_g(),
+				pose,
+				vel,
+				swapped_rot2
+			));
 		}
 
 		// I know, a priori, nobody other plugins subscribe to this topic
