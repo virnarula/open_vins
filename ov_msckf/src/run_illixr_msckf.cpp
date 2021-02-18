@@ -221,12 +221,14 @@ int main(int argc, char** argv) {
     }
 
     cout << "Finished Loading Data!!!!" << endl;
+
     // Create our VIO system
     auto params = create_params();
     sys = new VioManager(params);
 
-    // Set OpenCV threading
-    cv::setNumThreads(0);
+    // Disabling OpenCV threading is faster on x86 desktop but slower on
+    // jetson. Keeping this here for manual disabling.
+    // cv::setNumThreads(0);
 
     // Read in what mode we should be processing in (1=mono, 2=stereo)
     int max_cameras;

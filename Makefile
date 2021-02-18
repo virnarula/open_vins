@@ -8,7 +8,7 @@ CC := clang-10
 plugin.dbg.so: dbg
 dbg: build/Debug/Makefile
 	make -C build/Debug "-j$(nproc)" && \
-	rm -f $@ plugin.$@.so && \
+	rm -f plugin.$@.so && \
 	ln -s build/Debug/ov_msckf/libslam2.so plugin.$@.so && \
 	true
 
@@ -16,7 +16,7 @@ dbg: build/Debug/Makefile
 plugin.opt.so: opt
 opt: build/RelWithDebInfo/Makefile
 	make -C build/RelWithDebInfo "-j$(nproc)" && \
-	rm -f $@ plugin.$@.so && \
+	rm -f plugin.$@.so && \
 	ln -s build/RelWithDebInfo/ov_msckf/libslam2.so plugin.$@.so && \
 	true
 

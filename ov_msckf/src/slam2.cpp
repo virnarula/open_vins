@@ -196,6 +196,10 @@ public:
 			}
 		);
 
+        // Disabling OpenCV threading is faster on x86 desktop but slower on
+        // jetson. Keeping this here for manual disabling.
+        // cv::setNumThreads(0);
+
 #ifdef CV_HAS_METRICS
 		cv::metrics::setAccount(new std::string{"-1"});
 #endif
