@@ -4,14 +4,16 @@ use_integ=$(ILLIXR_INTEGRATION)
 CXX := clang++-10
 CC := clang-10
 
-.PHONY: dbg
+.PHONY: dbg plugin.dbg.so
+plugin.dbg.so: dbg
 dbg: build/Debug/Makefile
 	make -C build/Debug "-j$(nproc)" && \
 	rm -f $@ && \
 	ln -s build/Debug/ov_msckf/libslam2.so plugin.$@.so && \
 	true
 
-.PHONY: opt
+.PHONY: opt plugin.opt.so
+plugin.opt.so: opt
 opt: build/RelWithDebInfo/Makefile
 	make -C build/RelWithDebInfo "-j$(nproc)" && \
 	rm -f $@ && \
