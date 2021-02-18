@@ -182,10 +182,9 @@ public:
 		: plugin{name_, pb_}
 		, sb{pb->lookup_impl<switchboard>()}
 		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
-		, _m_imu_raw{sb->get_writer<imu_raw_type>("imu_raw")}
-		, open_vins_estimator{manager_params}
-		, _m_imu_integrator_input{sb->publish<imu_integrator_input>("imu_integrator_input")}
+		, _m_imu_integrator_input{sb->get_writer<imu_integrator_input>("imu_integrator_input")}
 		, _m_begin{std::chrono::system_clock::now()}
+		, open_vins_estimator{manager_params}
 		, imu_cam_buffer{nullptr}
 	{
 		_m_pose.put(_m_pose.allocate(
@@ -230,23 +229,6 @@ public:
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
 
-		if (open_vins_estimator.initialized()) {
-			Eigen::Matrix<double,13,1> state_plus = Eigen::Matrix<double,13,1>::Zero();
-			imu_raw_type *imu_raw_data = new (_m_imu_raw.allocate()) imu_raw_type {
-				Eigen::Matrix<double, 3, 1>::Zero(), 
-				Eigen::Matrix<double, 3, 1>::Zero(), 
-				Eigen::Matrix<double, 3, 1>::Zero(), 
-				Eigen::Matrix<double, 3, 1>::Zero(),
-				Eigen::Matrix<double, 13, 1>::Zero(),
-				// Record the timestamp (in ILLIXR time) associated with this imu sample.
-				// Used for MTP calculations.
-				datum->time
-			};
-        	open_vins_estimator.get_propagator()->fast_state_propagate(state, timestamp_in_seconds, state_plus, imu_raw_data);
-
-			_m_imu_raw.put(imu_raw_data);
-		}
-
 		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
 		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
 		// 	datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
@@ -270,8 +252,6 @@ public:
 
 		cv::Mat img0{imu_cam_buffer->img0.value()};
 		cv::Mat img1{imu_cam_buffer->img1.value()};
-		cv::cvtColor(img0, img0, cv::COLOR_BGR2GRAY);
-		cv::cvtColor(img1, img1, cv::COLOR_BGR2GRAY);
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
 		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
 
@@ -339,7 +319,7 @@ public:
 private:
 	const std::shared_ptr<switchboard> sb;
 	switchboard::writer<pose_type> _m_pose;
-	switchboard::writer<imu_raw_type> _m_imu_raw;
+    switchboard::writer<imu_integrator_input> _m_imu_integrator_input;
 	time_type _m_begin;
 	State *state;
 
