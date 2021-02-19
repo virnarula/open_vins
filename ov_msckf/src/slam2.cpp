@@ -181,20 +181,17 @@ public:
 	slam2(std::string name_, phonebook* pb_)
 		: plugin{name_, pb_}
 		, sb{pb->lookup_impl<switchboard>()}
+		, _m_pose{sb->get_writer<pose_type>("slow_pose")}
+		, _m_imu_integrator_input{sb->get_writer<imu_integrator_input>("imu_integrator_input")}
+		, _m_begin{std::chrono::system_clock::now()}
 		, open_vins_estimator{manager_params}
-		, _m_imu_integrator_input{sb->publish<imu_integrator_input>("imu_integrator_input")}
+		, imu_cam_buffer{nullptr}
 	{
-		_m_pose = sb->publish<pose_type>("slow_pose");
-		_m_begin = std::chrono::system_clock::now();
-		imu_cam_buffer = NULL;
-
-		_m_pose->put(
-			new pose_type{
-				.sensor_time = std::chrono::time_point<std::chrono::system_clock>{},
-				.position = Eigen::Vector3f{0, 0, 0},
-				.orientation = Eigen::Quaternionf{1, 0, 0, 0}
-			}
-		);
+		_m_pose.put(_m_pose.allocate(
+			std::chrono::time_point<std::chrono::system_clock>{},
+			Eigen::Vector3f{0, 0, 0},
+			Eigen::Quaternionf{1, 0, 0, 0}
+		));
 
         // Disabling OpenCV threading is faster on x86 desktop but slower on
         // jetson. Keeping this here for manual disabling.
@@ -209,14 +206,13 @@ public:
 
 	virtual void start() override {
 		plugin::start();
-		sb->schedule<imu_cam_type>(id, "imu_cam", [&](const imu_cam_type *datum) {
-			this->feed_imu_cam(datum);
+		sb->schedule<imu_cam_type>(id, "imu_cam", [&](switchboard::ptr<const imu_cam_type> datum, std::size_t iteration_no) {
+			this->feed_imu_cam(datum, iteration_no);
 		});
 	}
 
 
-	std::size_t iteration_no = 0;
-	void feed_imu_cam(const imu_cam_type *datum) {
+	void feed_imu_cam(switchboard::ptr<const imu_cam_type> datum, std::size_t iteration_no) {
 		// Ensures that slam doesnt start before valid IMU readings come in
 		if (datum == NULL) {
 			assert(previous_timestamp == 0);
@@ -233,6 +229,10 @@ public:
 		assert((datum->img0.has_value() && datum->img1.has_value()) || (!datum->img0.has_value() && !datum->img1.has_value()));
 		open_vins_estimator.feed_measurement_imu(timestamp_in_seconds, (datum->angular_v).cast<double>(), (datum->linear_a).cast<double>());
 
+		// std::cout << std::fixed << "Time of IMU/CAM: " << timestamp_in_seconds * 1e9 << " Lin a: " << 
+		// 	datum->angular_v[0] << ", " << datum->angular_v[1] << ", " << datum->angular_v[2] << ", " <<
+		// 	datum->linear_a[0] << ", " << datum->linear_a[1] << ", " << datum->linear_a[2] << std::endl;
+
 		// If there is not cam data this func call, break early
 		if (!datum->img0.has_value() && !datum->img1.has_value()) {
 			return;
@@ -243,7 +243,6 @@ public:
 
 #ifdef CV_HAS_METRICS
 		cv::metrics::setAccount(new std::string{std::to_string(iteration_no)});
-		iteration_no++;
 		if (iteration_no % 20 == 0) {
 			cv::metrics::dump();
 		}
@@ -251,8 +250,8 @@ public:
 #warning "No OpenCV metrics available. Please recompile OpenCV from git clone --branch 3.4.6-instrumented https://github.com/ILLIXR/opencv/. (see install_deps.sh)"
 #endif
 
-		cv::Mat img0{*imu_cam_buffer->img0.value()};
-		cv::Mat img1{*imu_cam_buffer->img1.value()};
+		cv::Mat img0{imu_cam_buffer->img0.value()};
+		cv::Mat img1{imu_cam_buffer->img1.value()};
 		double buffer_timestamp_seconds = double(imu_cam_buffer->dataset_time) / NANO_SEC;
 		open_vins_estimator.feed_measurement_stereo(buffer_timestamp_seconds, img0, img1, 0, 1);
 
@@ -279,16 +278,16 @@ public:
 				isUninitialized = false;
 			}
 
-			_m_pose->put(new pose_type{
-				.sensor_time = imu_cam_buffer->time,
-				.position = swapped_pos,
-				.orientation = swapped_rot,
-			});
+			_m_pose.put(_m_pose.allocate(
+				imu_cam_buffer->time,
+				swapped_pos,
+				swapped_rot
+			));
 
-			_m_imu_integrator_input->put(new imu_integrator_input{
-				.last_cam_integration_time = timestamp_in_seconds,
-				.t_offset = state->_calib_dt_CAMtoIMU->value()(0),
-				.params = {
+			_m_imu_integrator_input.put(_m_imu_integrator_input.allocate(
+				timestamp_in_seconds,
+				state->_calib_dt_CAMtoIMU->value()(0),
+				imu_params{
 					.gyro_noise = 0.00016968,
 					.acc_noise = 0.002,
 					.gyro_walk = 1.9393e-05,
@@ -297,13 +296,12 @@ public:
 					.imu_integration_sigma = 1.0,
 					.nominal_rate = 200.0,
 				},
-
-				.biasAcc = state->_imu->bias_a(),
-				.biasGyro = state->_imu->bias_g(),
-				.position = pose,
-				.velocity = vel,
-				.quat = swapped_rot2,
-			});
+				state->_imu->bias_a(),
+				state->_imu->bias_g(),
+				pose,
+				vel,
+				swapped_rot2
+			));
 		}
 
 		// I know, a priori, nobody other plugins subscribe to this topic
@@ -320,16 +318,15 @@ public:
 
 private:
 	const std::shared_ptr<switchboard> sb;
-	std::unique_ptr<writer<pose_type>> _m_pose;
-	std::unique_ptr<writer<imu_integrator_input>> _m_imu_integrator_input;
-
+	switchboard::writer<pose_type> _m_pose;
+    switchboard::writer<imu_integrator_input> _m_imu_integrator_input;
 	time_type _m_begin;
 	State *state;
 
 	VioManagerOptions manager_params = create_params();
 	VioManager open_vins_estimator;
 
-	const imu_cam_type* imu_cam_buffer;
+	switchboard::ptr<const imu_cam_type> imu_cam_buffer;
 	double previous_timestamp = 0.0;
 	bool isUninitialized = true;
 };
