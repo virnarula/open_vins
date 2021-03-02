@@ -192,6 +192,9 @@ public:
 
 	void feed_imu_cam(switchboard::ptr<const imu_cam_type> datum, std::size_t iteration_no) {
 		// Ensures that slam doesnt start before valid IMU readings come in
+		double timestamp_in_seconds;
+		{
+			CPU_TIMER_TIME_BLOCK("IMU");
 		if (datum == nullptr) {
 			std::cerr << "slam2:feed_imu_cam datum == nullptr\n";
 			abort();
@@ -199,7 +202,7 @@ public:
 
 		// This ensures that every data point is coming in chronological order If youre failing this assert, 
 		// make sure that your data folder matches the name in offline_imu_cam/plugin.cc
-		double timestamp_in_seconds = (double(datum->dataset_time) / NANO_SEC);
+		timestamp_in_seconds = (double(datum->dataset_time) / NANO_SEC);
 		assert(timestamp_in_seconds > previous_timestamp);
 		previous_timestamp = timestamp_in_seconds;
 
@@ -218,7 +221,10 @@ public:
 			imu_cam_buffer = datum;
 			return;
 		}
+		}
 
+		{
+			CPU_TIMER_TIME_BLOCK("cam");
 		cv::Mat img0;
 		cv::Mat img1;
 
@@ -292,6 +298,7 @@ public:
 		// const_cast<imu_cam_type*>(imu_cam_buffer)->img0.reset();
 		// const_cast<imu_cam_type*>(imu_cam_buffer)->img1.reset();
 		imu_cam_buffer = datum;
+		}
 	}
 
 	virtual ~slam2() override {}
