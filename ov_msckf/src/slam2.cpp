@@ -195,11 +195,6 @@ public:
 		cv::metrics::setAccount(new std::string{"-1"});
 #endif
 
-	}
-
-
-	virtual void start() override {
-		plugin::start();
 		sb->schedule<imu_cam_type>(id, "imu_cam", [&](switchboard::ptr<const imu_cam_type> datum, std::size_t iteration_no) {
 			this->feed_imu_cam(datum, iteration_no);
 		});
