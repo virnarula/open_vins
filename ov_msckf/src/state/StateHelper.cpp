@@ -19,6 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "StateHelper.h"
+#include "hpvm.h"
 
 
 using namespace ov_core;
@@ -39,8 +40,8 @@ void StateHelper::EKFPropagation(State *state, const std::vector<Type*> &order_N
     int size_order_NEW = order_NEW.at(0)->size();
     for(size_t i=0; i<order_NEW.size()-1; i++) {
         if(order_NEW.at(i)->id()+order_NEW.at(i)->size()!=order_NEW.at(i+1)->id()) {
-			printf(RED "StateHelper::EKFPropagation() - Called with non-contiguous state elements!\n" RESET);
-			printf(RED "StateHelper::EKFPropagation() - This code only support a state transition which is in the same order as the state\n" RESET);
+            printf(RED "StateHelper::EKFPropagation() - Called with non-contiguous state elements!\n" RESET);
+            printf(RED "StateHelper::EKFPropagation() - This code only support a state transition which is in the same order as the state\n" RESET);
             std::exit(EXIT_FAILURE);
         }
         size_order_NEW += order_NEW.at(i+1)->size();
@@ -97,9 +98,7 @@ void StateHelper::EKFPropagation(State *state, const std::vector<Type*> &order_N
     bool found_neg = false;
     for(int i=0; i<diags.rows(); i++) {
         if(diags(i) < 0.0) {
-            #ifndef NDEBUG
-                printf(RED "StateHelper::EKFPropagation() - diagonal at %d is %.2f\n" RESET,i,diags(i));
-            #endif
+            printf(RED "StateHelper::EKFPropagation() - diagonal at %d is %.2f\n" RESET,i,diags(i));
             found_neg = true;
         }
     }
@@ -107,42 +106,53 @@ void StateHelper::EKFPropagation(State *state, const std::vector<Type*> &order_N
 
 }
 
+/*
+void full_function( State               *state, size_t state_size,
+                    std::vector<Type*>  *H_order, size_t H_order_size,
+                    Eigen::Matrix       *H, size_t H_size,
+                    Eigen::VectorXd     *res, size_t res_size,
+                    Eigen::MatrixXd     *R, size_t R_size) {
+    auto section = __hpvm_parallel_section_begin();
 
-void StateHelper::EKFUpdate(State *state, const std::vector<Type *> &H_order, const Eigen::MatrixXd &H,
-                            const Eigen::VectorXd &res, const Eigen::MatrixXd &R) {
+    auto task1 = __hpvm_parallel_task_begin(2, state, state_size, H_order, H_order_size, 
+                                            2, state, state_size, H_order, H_order_size);
 
-    //==========================================================
-    //==========================================================
-    // Part of the Kalman Gain K = (P*H^T)*S^{-1} = M*S^{-1}
-    assert(res.rows() == R.rows());
-    assert(H.rows() == res.rows());
-    Eigen::MatrixXd M_a = Eigen::MatrixXd::Zero(state->_Cov.rows(), res.rows());
+    Eigen::MatrixXd M_a = Eigen::MatrixXd::Zero(state->_Cov.rows(), res->rows());
 
     // Get the location in small jacobian for each measuring variable
     int current_it = 0;
     std::vector<int> H_id;
-    for (Type *meas_var: H_order) {
+    for (Type *meas_var: *H_order) {
         H_id.push_back(current_it);
         current_it += meas_var->size();
     }
 
-    //==========================================================
-    //==========================================================
-    // For each active variable find its M = P*H^T
-    for (Type *var: state->_variables) {
-        // Sum up effect of each subjacobian = K_i= \sum_m (P_im Hm^T)
-        Eigen::MatrixXd M_i = Eigen::MatrixXd::Zero(var->size(), res.rows());
-        for (size_t i = 0; i < H_order.size(); i++) {
-            Type *meas_var = H_order[i];
+    __hpvm_parallel_task_end(task1);
+
+
+    for (int i = 0; i < _variables.size(); i++) {
+        __hpvm_parallel_loop(   6,  state, state_size,
+                                    res, res_size,
+                                    H_order, H_order_size
+                                    H_id, H_id_size,
+                                    H, H_size,
+                                    M_a, M_a_size,
+                                1,  M_a, M_a_size);
+        auto var = state->_variables[i];
+
+        Eigen::MatrixXd M_i = Eigen::MatrixXd::Zero(var->size(), res->rows());
+
+        for (size_t j = 0; j < H_order.size(); j++) {
+            Type *meas_var = H_order[j];
             M_i.noalias() += state->_Cov.block(var->id(), meas_var->id(), var->size(), meas_var->size()) *
-                             H.block(0, H_id[i], H.rows(), meas_var->size()).transpose();
-        }
-        M_a.block(var->id(), 0, var->size(), res.rows()) = M_i;
+                             H->block(0, H_id[j], H->rows(), meas_var->size()).transpose();
+        } 
+
+        M_a.block(var->id(), 0, var->size(), res->rows()) = M_i;
     }
 
-    //==========================================================
-    //==========================================================
-    // Get covariance of the involved terms
+    auto task3 = __hpvm_parallel_task_begin();
+
     Eigen::MatrixXd P_small = StateHelper::get_marginal_covariance(state, H_order);
 
     // Residual covariance S = H*Cov*H' + R
@@ -168,9 +178,131 @@ void StateHelper::EKFUpdate(State *state, const std::vector<Type *> &H_order, co
     bool found_neg = false;
     for(int i=0; i<diags.rows(); i++) {
         if(diags(i) < 0.0) {
-            #ifndef NDEBUG
-                printf(RED "StateHelper::EKFUpdate() - diagonal at %d is %.2f\n" RESET,i,diags(i));
-            #endif
+            printf(RED "StateHelper::EKFUpdate() - diagonal at %d is %.2f\n" RESET,i,diags(i));
+            found_neg = true;
+        }
+    }
+    assert(!found_neg);
+
+    // Calculate our delta and update all our active states
+    Eigen::VectorXd dx = K*res;
+    for (size_t i = 0; i < state->_variables.size(); i++) {
+        state->_variables.at(i)->update(dx.block(state->_variables.at(i)->id(), 0, state->_variables.at(i)->size(), 1));
+    }
+
+    __hpvm_parallel_task_end(task3);
+
+    __hpvm_parallel_section_end(section);
+}*/
+
+
+
+void root_node_simple(  State               *state, size_t state_size, 
+                        Eigen::vectorXd     *res, size_t res_size,
+                        std::vector<Type *> *H_order, size_t H_order_size,
+                        std::vector<int>    *H_id, size_t H_id_size,
+                        Eigen::MatrixXd     *H, size_t H_size,
+                        Eigen::MatrixXd     *M_a, size_t M_a_size,
+                        int                 loop_iterations) {
+
+    
+
+    auto section = __hpvm_parallel_section_begin();
+
+    for (int i = 0; i < loop_iterations; i++) {
+        __hpvm_parallel_loop(   7,  state, state_size,
+                                    res, res_size,
+                                    H_order, H_order_size
+                                    H_id, H_id_size,
+                                    H, H_size,
+                                    M_a, M_a_size,
+                                    loop_iterations,
+                                1,  M_a, M_a_size);
+        auto var = state->_variables[i];
+
+        Eigen::MatrixXd M_i = Eigen::MatrixXd::Zero(var->size(), res->rows());
+
+        for (size_t j = 0; j < H_order.size(); j++) {
+            Type *meas_var = H_order[j];
+            M_i.noalias() += state->_Cov.block(var->id(), meas_var->id(), var->size(), meas_var->size()) *
+                             H->block(0, H_id[j], H->rows(), meas_var->size()).transpose();
+        } 
+
+        M_a.block(var->id(), 0, var->size(), res->rows()) = M_i;
+    }
+
+    __hpvm_parallel_section_end(section);
+}
+
+void StateHelper::EKFUpdate(State *state, const std::vector<Type *> &H_order, const Eigen::MatrixXd &H,
+                            const Eigen::VectorXd &res, const Eigen::MatrixXd &R) {
+    
+    assert(res.rows() == R.rows());
+    assert(H.rows() == res.rows());
+    Eigen::MatrixXd M_a = Eigen::MatrixXd::Zero(state->_Cov.rows(), res.rows());
+
+    // Get the location in small jacobian for each measuring variable
+    int current_it = 0;
+    std::vector<int> H_id;
+    for (Type *meas_var: H_order) {
+        H_id.push_back(current_it);
+        current_it += meas_var->size();
+    }
+
+    
+
+
+
+    
+
+    auto dfg = __hpvm__launch(
+        (void*)root_node_simple, 7
+        state, sizeof(*state),
+        &res, sizeof(res),
+        &H_order, sizeof(H_order),
+        &H_id, sizeof(H_id),
+        &H, sizeof(H),
+        &M_a, sizeof(M_a),
+        state->_variables.size(), 1,
+        &M_a, sizeof(M_a)
+    );
+    __hpvm__wait(dfg);
+
+
+
+
+
+
+
+
+
+
+    Eigen::MatrixXd P_small = StateHelper::get_marginal_covariance(state, H_order);
+
+    // Residual covariance S = H*Cov*H' + R
+    Eigen::MatrixXd S(R.rows(), R.rows());
+    S.triangularView<Eigen::Upper>() = H * P_small * H.transpose();
+    S.triangularView<Eigen::Upper>() += R;
+    //Eigen::MatrixXd S = H * P_small * H.transpose() + R;
+
+    // Invert our S (should we use a more stable method here??)
+    Eigen::MatrixXd Sinv = Eigen::MatrixXd::Identity(R.rows(), R.rows());
+    S.selfadjointView<Eigen::Upper>().llt().solveInPlace(Sinv);
+    Eigen::MatrixXd K = M_a * Sinv.selfadjointView<Eigen::Upper>();
+    //Eigen::MatrixXd K = M_a * S.inverse();
+
+    // Update Covariance
+    state->_Cov.triangularView<Eigen::Upper>() -= K * M_a.transpose();
+    state->_Cov = state->_Cov.selfadjointView<Eigen::Upper>();
+    //Cov -= K * M_a.transpose();
+    //Cov = 0.5*(Cov+Cov.transpose());
+
+    // We should check if we are not positive semi-definitate (i.e. negative diagionals is not s.p.d)
+    Eigen::VectorXd diags = state->_Cov.diagonal();
+    bool found_neg = false;
+    for(int i=0; i<diags.rows(); i++) {
+        if(diags(i) < 0.0) {
+            printf(RED "StateHelper::EKFUpdate() - diagonal at %d is %.2f\n" RESET,i,diags(i));
             found_neg = true;
         }
     }
@@ -240,8 +372,8 @@ void StateHelper::marginalize(State *state, Type *marg) {
 
     // Check if the current state has the element we want to marginalize
     if (std::find(state->_variables.begin(), state->_variables.end(), marg) == state->_variables.end()) {
-		printf(RED "StateHelper::marginalize() - Called on variable that is not in the state\n" RESET);
-		printf(RED "StateHelper::marginalize() - Marginalization, does NOT work on sub-variables yet...\n" RESET);
+        printf(RED "StateHelper::marginalize() - Called on variable that is not in the state\n" RESET);
+        printf(RED "StateHelper::marginalize() - Marginalization, does NOT work on sub-variables yet...\n" RESET);
         std::exit(EXIT_FAILURE);
     }
 
@@ -347,8 +479,8 @@ Type* StateHelper::clone(State *state, Type *variable_to_clone) {
 
     // Check if the current state has this variable
     if (new_clone == nullptr) {
-		printf(RED "StateHelper::clone() - Called on variable is not in the state\n" RESET);
-		printf(RED "StateHelper::clone() - Ensure that the variable specified is a variable, or sub-variable..\n" RESET);
+        printf(RED "StateHelper::clone() - Called on variable is not in the state\n" RESET);
+        printf(RED "StateHelper::clone() - Ensure that the variable specified is a variable, or sub-variable..\n" RESET);
         std::exit(EXIT_FAILURE);
     }
 
@@ -376,12 +508,12 @@ bool StateHelper::initialize(State *state, Type *new_variable, const std::vector
     for(int r=0; r<R.rows(); r++) {
         for(int c=0; c<R.cols(); c++) {
             if(r==c && R(0,0) != R(r,c)) {
-				printf(RED "StateHelper::initialize() - Your noise is not isotropic!\n" RESET);
-				printf(RED "StateHelper::initialize() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
+                printf(RED "StateHelper::initialize() - Your noise is not isotropic!\n" RESET);
+                printf(RED "StateHelper::initialize() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
                 std::exit(EXIT_FAILURE);
             } else if(r!=c && R(r,c) != 0.0) {
-				printf(RED "StateHelper::initialize() - Your noise is not diagonal!\n" RESET);
-				printf(RED "StateHelper::initialize() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
+                printf(RED "StateHelper::initialize() - Your noise is not diagonal!\n" RESET);
+                printf(RED "StateHelper::initialize() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
                 std::exit(EXIT_FAILURE);
             }
         }
@@ -468,12 +600,12 @@ void StateHelper::initialize_invertible(State *state, Type *new_variable, const 
     for(int r=0; r<R.rows(); r++) {
         for(int c=0; c<R.cols(); c++) {
             if(r==c && R(0,0) != R(r,c)) {
-				printf(RED "StateHelper::initialize_invertible() - Your noise is not isotropic!\n" RESET);
-				printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
+                printf(RED "StateHelper::initialize_invertible() - Your noise is not isotropic!\n" RESET);
+                printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f verses value of %.2f\n" RESET, R(r,c), R(0,0));
                 std::exit(EXIT_FAILURE);
             } else if(r!=c && R(r,c) != 0.0) {
-				printf(RED "StateHelper::initialize_invertible() - Your noise is not diagonal!\n" RESET);
-				printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
+                printf(RED "StateHelper::initialize_invertible() - Your noise is not diagonal!\n" RESET);
+                printf(RED "StateHelper::initialize_invertible() - Found a value of %.2f at row %d and column %d\n" RESET, R(r,c), r, c);
                 std::exit(EXIT_FAILURE);
             }
         }
