@@ -198,7 +198,7 @@ void full_function( State               *state, size_t state_size,
 
 
 void root_node_simple(  State               *state, size_t state_size, 
-                        Eigen::vectorXd     *res, size_t res_size,
+                        Eigen::VectorXd     *res, size_t res_size,
                         std::vector<Type *> *H_order, size_t H_order_size,
                         std::vector<int>    *H_id, size_t H_id_size,
                         Eigen::MatrixXd     *H, size_t H_size,
@@ -212,7 +212,7 @@ void root_node_simple(  State               *state, size_t state_size,
     for (int i = 0; i < loop_iterations; i++) {
         __hpvm_parallel_loop(   7,  state, state_size,
                                     res, res_size,
-                                    H_order, H_order_size
+                                    H_order, H_order_size,
                                     H_id, H_id_size,
                                     H, H_size,
                                     M_a, M_a_size,
@@ -222,13 +222,13 @@ void root_node_simple(  State               *state, size_t state_size,
 
         Eigen::MatrixXd M_i = Eigen::MatrixXd::Zero(var->size(), res->rows());
 
-        for (size_t j = 0; j < H_order.size(); j++) {
-            Type *meas_var = H_order[j];
+        for (size_t j = 0; j < H_order->size(); j++) {
+            Type *meas_var = (*H_order)[j];
             M_i.noalias() += state->_Cov.block(var->id(), meas_var->id(), var->size(), meas_var->size()) *
-                             H->block(0, H_id[j], H->rows(), meas_var->size()).transpose();
+                             H->block(0,(*H_id)[j], H->rows(), meas_var->size()).transpose();
         } 
 
-        M_a.block(var->id(), 0, var->size(), res->rows()) = M_i;
+        M_a->block(var->id(), 0, var->size(), res->rows()) = M_i;
     }
 
     __hpvm_parallel_section_end(section);
@@ -251,12 +251,12 @@ void StateHelper::EKFUpdate(State *state, const std::vector<Type *> &H_order, co
 
     
 
-
+	__hpvm__init();
 
     
 
     auto dfg = __hpvm__launch(
-        (void*)root_node_simple, 7
+        (void*)root_node_simple, 7,
         state, sizeof(*state),
         &res, sizeof(res),
         &H_order, sizeof(H_order),
@@ -271,7 +271,7 @@ void StateHelper::EKFUpdate(State *state, const std::vector<Type *> &H_order, co
 
 
 
-
+	__hpvm__cleanup();
 
 
 

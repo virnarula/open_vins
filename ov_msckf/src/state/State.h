@@ -111,6 +111,9 @@ namespace ov_msckf {
         /// What distortion model we are using (false=radtan, true=fisheye)
         std::unordered_map<size_t, bool> _cam_intrinsics_model;
 
+	std::vector<Type*> _variables;
+
+	Eigen::MatrixXd _Cov;
 
     private:
 
@@ -120,10 +123,10 @@ namespace ov_msckf {
         friend class StateHelper;
 
         /// Covariance of all active variables
-        Eigen::MatrixXd _Cov;
+       // Eigen::MatrixXd _Cov;
 
         /// Vector of variables
-        std::vector<Type*> _variables;
+        //std::vector<Type*> _variable;
 
 
     };
