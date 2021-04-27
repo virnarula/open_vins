@@ -19,6 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "TrackKLT.h"
+#include "hpvm.h"
 
 #ifdef ILLIXR_INTEGRATION
 #include "../../../ov_msckf/src/common/cpu_timer.hpp"
@@ -310,18 +311,55 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     //===================================================================================
 
     // Update our feature database, with theses new observations
-    for(size_t i=0; i<good_left.size(); i++) {
-        cv::Point2f npt_l = undistort_point(good_left.at(i).pt, cam_id_left);
-        database->update_feature(good_ids_left.at(i), timestamp, cam_id_left,
-                                 good_left.at(i).pt.x, good_left.at(i).pt.y,
+    std::vector<cv::KeyPoint> *good_left_ptr = &good_left;
+    std::vector<size_t> *good_ids_left_ptr = &good_ids_left;
+    size_t database_size = sizeof(database);
+    size_t good_left_size = sizeof(good_left);
+    size_t good_ids_left_size =  sizeof(good_ids_left);
+
+    std::vector<cv::KeyPoint> *good_right_ptr = &good_right;
+    std::vector<size_t> *good_ids_right_ptr = &good_ids_right;
+    size_t good_right_size = sizeof(good_right);
+    size_t good_ids_right_size =  sizeof(good_ids_right);
+
+    auto launch = __hpvm_launch_begin(  8,  good_left_ptr, good_left_size,
+                                            good_ids_left_ptr, good_ids_left_size,
+                                            good_right_ptr, good_right_size,
+                                            good_ids_right_ptr, good_ids_right_size,
+                                            database, database_size,
+                                            cam_id_left, timestamp, cam_id_right,
+                                        1,  database, database_size);
+
+    auto section = __hpvm_parallel_section_begin();
+
+    for(size_t i=0; i<good_left_ptr->size(); i++) {
+        __hpvm_parallel_loop(5, good_left_ptr, good_left_size,
+                                good_ids_left_ptr, good_ids_left_size,
+                                database, database_size,
+                                cam_id_left, timestamp,
+                            0);
+        cv::Point2f npt_l = undistort_point(good_left_ptr->at(i).pt, cam_id_left);
+        database->update_feature(good_ids_left_ptr->at(i), timestamp, cam_id_left,
+                                 good_left_ptr->at(i).pt.x, good_left_ptr->at(i).pt.y,
                                  npt_l.x, npt_l.y);
     }
-    for(size_t i=0; i<good_right.size(); i++) {
-        cv::Point2f npt_r = undistort_point(good_right.at(i).pt, cam_id_right);
-        database->update_feature(good_ids_right.at(i), timestamp, cam_id_right,
-                                 good_right.at(i).pt.x, good_right.at(i).pt.y,
+
+
+    for(size_t i=0; i<good_right_ptr->size(); i++) {
+        __hpvm_parallel_loop(5, good_right_ptr, good_right_size,
+                                good_ids_right_ptr, good_ids_right_size,
+                                database, database_size,
+                                cam_id_right, timestamp,
+                            1,  database, database_size);
+        cv::Point2f npt_r = undistort_point(good_right_ptr->at(i).pt, cam_id_right);
+        database->update_feature(good_ids_right_ptr->at(i), timestamp, cam_id_right,
+                                 good_right_ptr->at(i).pt.x, good_right_ptr->at(i).pt.y,
                                  npt_r.x, npt_r.y);
     }
+
+    __hpvm_parallel_section_end(section);
+
+    __hpvm_launch_end(launch);
 
     // Move forward in time
     img_last[cam_id_left] = img_left.clone();
