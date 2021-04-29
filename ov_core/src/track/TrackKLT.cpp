@@ -316,23 +316,27 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     size_t database_size = sizeof(database);
     size_t good_left_size = sizeof(good_left);
     size_t good_ids_left_size =  sizeof(good_ids_left);
-
+     
     std::vector<cv::KeyPoint> *good_right_ptr = &good_right;
     std::vector<size_t> *good_ids_right_ptr = &good_ids_right;
     size_t good_right_size = sizeof(good_right);
     size_t good_ids_right_size =  sizeof(good_ids_right);
 
-    auto launch = __hpvm_launch_begin(  8,  good_left_ptr, good_left_size,
+    size_t good_left_ptr_size = good_left_ptr->size();
+    size_t good_right_ptr_size = good_right_ptr->size();
+
+    auto launch = __hpvm_launch_begin( 10,  good_left_ptr, good_left_size,
                                             good_ids_left_ptr, good_ids_left_size,
                                             good_right_ptr, good_right_size,
                                             good_ids_right_ptr, good_ids_right_size,
                                             database, database_size,
                                             cam_id_left, timestamp, cam_id_right,
+					    good_left_ptr_size, good_right_ptr_size,
                                         1,  database, database_size);
 
     auto section = __hpvm_parallel_section_begin();
 
-    for(size_t i=0; i<good_left_ptr->size(); i++) {
+    for(size_t i=0; i<good_left_ptr_size; i++) {
         __hpvm_parallel_loop(5, good_left_ptr, good_left_size,
                                 good_ids_left_ptr, good_ids_left_size,
                                 database, database_size,
@@ -345,7 +349,7 @@ void TrackKLT::feed_stereo(double timestamp, cv::Mat &img_leftin, cv::Mat &img_r
     }
 
 
-    for(size_t i=0; i<good_right_ptr->size(); i++) {
+    for(size_t i=0; i<good_right_ptr_size; i++) {
         __hpvm_parallel_loop(5, good_right_ptr, good_right_size,
                                 good_ids_right_ptr, good_ids_right_size,
                                 database, database_size,
